@@ -1,0 +1,8 @@
+{
+    "cSpell.words": ["hugr", "duckdb"],
+    "go.buildFlags": ["-tags=duckdb_arrow"],
+    "go.testEnvVars": {
+        "CGO_CFLAGS":"-O1 -g"
+    },
+    "go.testTags": "duckdb_arrow",
+}
