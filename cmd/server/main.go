@@ -110,8 +110,7 @@ func installDuckDBExtension() error {
 		INSTALL sqlite; LOAD sqlite;
 		INSTALL sqlite3; LOAD sqlite3;
 		INSTALL h3 FROM community; LOAD h3;
-		--  INSTALL arrow; 
-		LOAD arrow;
+		--  INSTALL arrow; LOAD arrow;
 		INSTALL aws; LOAD aws;
 		INSTALL delta; LOAD delta;
 		INSTALL httpfs; LOAD httpfs;
