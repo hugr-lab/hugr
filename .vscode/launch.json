@@ -13,7 +13,7 @@
                 "CGO_CFLAGS":"-O1 -g"
             },
             "envFile": "${workspaceFolder}/.local/.memory.env",
-            "program": "${workspaceFolder}/cmd/qe-server",
+            "program": "${workspaceFolder}/cmd/server",
             "buildFlags": ["-tags", "duckdb_arrow"]
         },
         {
@@ -25,7 +25,7 @@
                 "CGO_CFLAGS":"-O1 -g"
             },
             "envFile": "${workspaceFolder}/.local/.env",
-            "program": "${workspaceFolder}/cmd/qe-server",
+            "program": "${workspaceFolder}/cmd/server",
             "buildFlags": ["-tags=duckdb_arrow"]
         },
         {
@@ -37,7 +37,7 @@
                 "CGO_CFLAGS":"-O1 -g"
             },
             "envFile": "${workspaceFolder}/.local/.auth.env",
-            "program": "${workspaceFolder}/cmd/qe-server",
+            "program": "${workspaceFolder}/cmd/server",
             "buildFlags": ["-tags=duckdb_arrow"]
         },
         {
