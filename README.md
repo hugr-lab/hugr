@@ -1,20 +1,24 @@
 # HUGR
 
-The query data engine for the DataMesh level.
+The DataMesh service that provides access to various data sources through common GraphQL API.
 
-The HUGR is built on the top of [DuckDB](https://duckdb.org) and uses DuckDB as a storage engine. The HUGR is designed to be used as a query engine for the data mesh level. The HUGR is a GraphQL server that can provide access to query data in various data sources:
+The HUGR is built on the top of [DuckDB](https://duckdb.org) and uses it as an calculation engine. The Hugr can work with following data sources:
 
 - PostgreSQL (incl. with extensions: PostGIS, TimescaleDB)
 - DuckDB files
 - HTTP REST API (support OpenAPI v3)
 - All file formats and data sources that supported by DuckDB (CSV, Parquet, JSON, ESRI Shape, etc.)
 
+Files can be stored in the local file system or in the cloud storage (currently support only s3 cloud storage, in plan: Azure, GCS, AWS, R2).
+
+MySQL, SQLLite, Clickhouse will be supported in the future.
+
 ## Executable
 
 The executable is built with Go and can be run on any platform that supports Go. The executable is built with the following command:
 
 ```bash
-go build -o hugr cmd/qe-server/main.go
+CG_ENABLED=1 go build -o hugr cmd/server/main.go
 ```
 
 It used the following packages:
@@ -91,40 +95,13 @@ There are two types of cache: L1 and L2. L1 cache is in-memory cache (using [big
 - CACHE_L2_USERNAME - username for L2 cache (use for redis only)
 - CACHE_L2_PASSWORD - password for L2 cache (use for redis only)
 
-## Linux docker deployment
-
-Command to build docker image
-
-```bash
-docker build --platform=linux/amd64 -t qe-server -f ./docker/linux.dockerfile .
-```
-
-Than the image can be exported and loaded on the target platform.
-
-```bash
-docker save -o /.local/amd64.image.tar qe-server
-
-docker load -i .local/amd64.image.tar
-```
-
-And than up trough docker compose
-
-```bash
-cd docker && docker compose up
-```
 
 ## CoreDB migrations
 
 For some reason it can be needed to run migrations for the core db. It makes manually by the special tool - migrate that provided in this repository (cmd/migrate). The following command run migrations:
 
 ```bash
-go build -o migrate cmd/migrate/main.go
+CG_ENABLED=1 go build -o migrate cmd/migrate/main.go
 
-./migrate -path cmd/migrate/migrations -core-db core-db.duckdb
-```
-
-This tool is also built in the docker image, so it can be used in the docker container.
-
-```bash
-docker exec -it qe-server ./migrate --path ./migrations --core-db /data/.local/docker.duckdb
+./migrate -path /migrations -core-db core-db.duckdb
 ```
