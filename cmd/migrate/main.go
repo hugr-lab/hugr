@@ -15,7 +15,7 @@ import (
 
 var (
 	fCoreDB  = flag.String("core-db", "../../.local/qe-core.duckdb", "core database path")
-	fPath    = flag.String("path", "migrations", "path to the migrations folder")
+	fPath    = flag.String("path", "../../migrations", "path to the migrations folder")
 	fVersion = flag.String("to-version", "", "version to migrate to")
 )
 
@@ -88,11 +88,11 @@ func main() {
 		if d.IsDir() {
 			return nil
 		}
-		parts := strings.SplitN(path, string(filepath.Separator), 3)
-		if len(parts) < 2 {
+		parts := strings.Split(strings.TrimLeft(strings.TrimPrefix(path, *fPath), string(filepath.Separator)), string(filepath.Separator))
+		if len(parts) < 1 {
 			return nil
 		}
-		mv := strings.TrimRight(parts[1], ".sql")
+		mv := strings.TrimRight(parts[0], ".sql")
 		if version >= mv || *fVersion != "" && mv > *fVersion {
 			return nil
 		}
