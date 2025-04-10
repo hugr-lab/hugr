@@ -2,7 +2,7 @@
 
 The DataMesh service that provides access to various data sources through common GraphQL API.
 
-The HUGR is built on the top of [DuckDB](https://duckdb.org) and uses it as an calculation engine. The Hugr can work with following data sources:
+The Hugr is built on the top of [DuckDB](https://duckdb.org) and uses it as an calculation engine. The Hugr can work with following data sources:
 
 - PostgreSQL (incl. with extensions: PostGIS, TimescaleDB)
 - DuckDB files
@@ -21,17 +21,16 @@ The executable is built with Go and can be run on any platform that supports Go.
 CG_ENABLED=1 go build -o hugr cmd/server/main.go
 ```
 
-It used the following packages:
+## Dependencies
 
-- [github.com/marcboeker/go-duckdb/v2](https://github.com/marcboeker/go-duckdb)
-- [github.com/apache/arrow-go/v18](https://github.com/apache/arrow-go)
-- [github.com/paulmach/orb](https://github.com/paulmach/orb)
-- [github.com/vektah/gqlparser/v2](https://github.com/vektah/gqlparser)
-- [github.com/eko/gocache/v4](https://github.com/eko/gocache)
-- [github.com/vmihailenco/msgpack/v5](https://github.com/vmihailenco/msgpack)
-- [github.com/itchyny/gojq](https://github.com/itchyny/gojq)
-- [github.com/golang-jwt/jwt/v5](https://github.com/golang-jwt/jwt)
-- [github.com/getkin/kin-openapi](https://github.com/getkin/kin-openapi)
+The Hugr uses the [Hugr query engine package](https://github.com/hugr-lab/query-engine).
+
+## Deployment
+
+The common way to deploy the Hugr is to use Docker. The Docker image provided by repository [docker](https://hub.docker.com/r/hugr-lab/docker). There are two images provided:
+
+- ghcr.io/hugr-lab/server - simple hugr server,
+- ghcr.io/hugr-lab/automigrate - simple hugr server with automigration for the core-db schema.
 
 ## Environment variables
 
@@ -94,7 +93,6 @@ There are two types of cache: L1 and L2. L1 cache is in-memory cache (using [big
 - CACHE_L2_DATABASE - database name for L2 cache (use for redis only)
 - CACHE_L2_USERNAME - username for L2 cache (use for redis only)
 - CACHE_L2_PASSWORD - password for L2 cache (use for redis only)
-
 
 ## CoreDB migrations
 
