@@ -3,7 +3,7 @@ module github.com/hugr-lab/hugr
 go 1.24
 
 require (
-	github.com/hugr-lab/query-engine v0.0.0-20250409154851-60e929603d58
+	github.com/hugr-lab/query-engine v0.1.4
 	github.com/joho/godotenv v1.5.1
 	github.com/marcboeker/go-duckdb/v2 v2.2.0
 	github.com/spf13/viper v1.20.1
