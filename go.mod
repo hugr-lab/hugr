@@ -1,9 +1,9 @@
 module github.com/hugr-lab/hugr
 
-go 1.24
+go 1.24.2
 
 require (
-	github.com/hugr-lab/query-engine v0.1.4
+	github.com/hugr-lab/query-engine v0.1.6
 	github.com/joho/godotenv v1.5.1
 	github.com/marcboeker/go-duckdb/v2 v2.2.0
 	github.com/spf13/viper v1.20.1
