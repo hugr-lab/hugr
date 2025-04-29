@@ -18,7 +18,7 @@ MySQL, SQLLite, Clickhouse will be supported in the future.
 The executable is built with Go and can be run on any platform that supports Go. The executable is built with the following command:
 
 ```bash
-CG_ENABLED=1 go build -o hugr cmd/server/main.go
+CG_ENABLED=1 go build -tags='duckdb_arrow' -o hugr cmd/server/main.go
 ```
 
 ## Dependencies
@@ -78,7 +78,7 @@ The format of the config file is described in the [auth.md](auth.md) file. The c
 
 ### Cache
 
-There are two types of cache: L1 and L2. L1 cache is in-memory cache (using [bigcache](https://github.com/allegro/bigcache)), L2 cache is external cache (Redis, Memcached, Pegasus). The L1 cache is used for the most frequently used data, while the L2 cache is used for less frequently used data.
+There are two types of cache: L1 and L2. L1 cache is in-memory cache (using [bigcache](https://github.com/allegro/bigcache)), L2 cache is external cache (Redis, Memcached). The L1 cache is used for the most frequently used data, while the L2 cache is used for less frequently used data.
 
 - CACHE_TTL - time to live for cache, default: 0
 - CACHE_L1_ENABLED - enabled L1 cache, default: false
@@ -88,7 +88,7 @@ There are two types of cache: L1 and L2. L1 cache is in-memory cache (using [big
 - CACHE_L1_MAX_ITEM_SIZE - max size of the item in L1 cache
 - CACHE_L1_SHARDS - number of shards in L1 cache
 - CACHE_L2_ENABLED - enabled L2 cache, default: false
-- CACHE_L2_BACKEND - L2 cache backend, can be "redis", "memcached" or "pegasus"
+- CACHE_L2_BACKEND - L2 cache backend, can be "redis" or "memcached"
 - CACHE_L2_ADDRESSES - addresses of L2 cache servers, comma separated list, default: ""
 - CACHE_L2_DATABASE - database name for L2 cache (use for redis only)
 - CACHE_L2_USERNAME - username for L2 cache (use for redis only)
@@ -99,7 +99,7 @@ There are two types of cache: L1 and L2. L1 cache is in-memory cache (using [big
 For some reason it can be needed to run migrations for the core db. It makes manually by the special tool - migrate that provided in this repository (cmd/migrate). The following command run migrations:
 
 ```bash
-CG_ENABLED=1 go build -o migrate cmd/migrate/main.go
+CG_ENABLED=1 go build -tags='duckdb_arrow' -o migrate cmd/migrate/main.go
 
 ./migrate -path /migrations -core-db core-db.duckdb
 ```
