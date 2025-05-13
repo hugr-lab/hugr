@@ -29,15 +29,17 @@ func initEnvs() {
 }
 
 type Config struct {
-	Bind    string
-	Cluster cluster.Config
-	OIDC    auth.OIDCConfig
-	auth    auth.Config
+	Bind        string
+	ServiceBind string
+	Cluster     cluster.Config
+	OIDC        auth.OIDCConfig
+	auth        auth.Config
 }
 
 func loadConfig() Config {
 	return Config{
-		Bind: viper.GetString("BIND"),
+		Bind:        viper.GetString("BIND"),
+		ServiceBind: viper.GetString("SERVICE_BIND"),
 		OIDC: auth.OIDCConfig{
 			Issuer:          viper.GetString("OIDC_ISSUER"),
 			ClientID:        viper.GetString("OIDC_CLIENT_ID"),

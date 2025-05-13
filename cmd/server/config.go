@@ -14,8 +14,9 @@ import (
 )
 
 type Config struct {
-	Bind    string
-	Cluster ClusterConfig
+	Bind        string
+	ServiceBind string
+	Cluster     ClusterConfig
 
 	EnableAdminUI      bool
 	AdminUIFetchPath   string
@@ -59,7 +60,8 @@ func initEnvs() {
 
 func loadConfig() Config {
 	return Config{
-		Bind: viper.GetString("BIND"),
+		Bind:        viper.GetString("BIND"),
+		ServiceBind: viper.GetString("SERVICE_BIND"),
 		Cluster: ClusterConfig{
 			Secret:        viper.GetString("CLUSTER_SECRET"),
 			ManagementUrl: viper.GetString("CLUSTER_MANAGEMENT_URL"),

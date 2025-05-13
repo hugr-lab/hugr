@@ -15,6 +15,7 @@ import (
 	"github.com/hugr-lab/hugr/pkg/cluster"
 	"github.com/hugr-lab/hugr/pkg/cors"
 	"github.com/hugr-lab/hugr/pkg/info"
+	"github.com/hugr-lab/hugr/pkg/service"
 	hugr "github.com/hugr-lab/query-engine"
 	coredb "github.com/hugr-lab/query-engine/pkg/data-sources/sources/runtime/core-db"
 	"github.com/marcboeker/go-duckdb/v2"
@@ -148,12 +149,22 @@ func main() {
 			os.Exit(1)
 		}
 	}()
+	svc := service.New(config.ServiceBind)
+	err = svc.Start(ctx)
+	if err != nil {
+		log.Println("Services endpoint server start error:", err)
+	}
 	<-ctx.Done()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	err = srv.Shutdown(ctx)
 	if err != nil {
 		log.Println("Server shutdown error:", err)
+		os.Exit(1)
+	}
+	err = svc.Stop(ctx)
+	if err != nil {
+		log.Println("Service shutdown error:", err)
 		os.Exit(1)
 	}
 	log.Println("Server shutdown")

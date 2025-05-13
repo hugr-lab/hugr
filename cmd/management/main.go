@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/hugr-lab/hugr/pkg/cluster"
+	"github.com/hugr-lab/hugr/pkg/service"
 )
 
 // The hugr cluster management node.
@@ -40,17 +42,31 @@ func main() {
 	go func() {
 		log.Println("Starting server on ", conf.Bind)
 		err := srv.ListenAndServe()
+		if errors.Is(err, http.ErrServerClosed) {
+			log.Println("Server closed")
+			return
+		}
 		if err != nil {
 			log.Println("Server error:", err)
 			os.Exit(1)
 		}
 	}()
+	svc := service.New(conf.ServiceBind)
+	err = svc.Start(ctx)
+	if err != nil {
+		log.Println("Services endpoint server start error:", err)
+	}
 	<-ctx.Done()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	err = srv.Shutdown(ctx)
 	if err != nil {
 		log.Println("Server shutdown error:", err)
+		os.Exit(1)
+	}
+	err = svc.Stop(ctx)
+	if err != nil {
+		log.Println("Service shutdown error:", err)
 		os.Exit(1)
 	}
 	log.Println("Server shutdown")
