@@ -35,6 +35,7 @@ redirect_login_paths:
   - "/login"
   - "/auth"
 
+managed_api_keys: true
 login_url: "/login"
 redirect_url: "/home"
 secret_key: "your_secret_key_here"
@@ -66,6 +67,7 @@ secret_key: "your_secret_key_here"
     - **user_id**: Claim key for the user ID.
     - **user_name**: Claim key for the user name.
 
+- **managed_api_keys**: Boolean indicating if API keys are managed by the application.
 - **redirect_login_paths**: List of paths to redirect to for login.
 
 - **login_url**: URL for the login page.
