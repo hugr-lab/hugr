@@ -85,7 +85,7 @@ func (c *Config) Configure() (*auth.Config, error) {
 }
 
 type ProvidersConfig struct {
-	ManagedAPIKeysEnabled bool                         `json:"managed_api_keys" yaml:"managed_api_keys-api-keys-enabled"`
+	ManagedAPIKeysEnabled bool                         `json:"managed_api_keys" yaml:"managed-api-keys"`
 	Anonymous             auth.AnonymousConfig         `json:"anonymous" yaml:"anonymous"`
 	APIKeys               map[string]auth.ApiKeyConfig `json:"api_keys" yaml:"api-keys"`
 	JWT                   map[string]auth.JwtConfig    `json:"jwt" yaml:"jwt"`

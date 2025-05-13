@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"flag"
 	"log"
 	"net/http"
@@ -32,65 +33,69 @@ func main() {
 		}
 		return
 	}
-	conf := loadConfig()
+	config := loadConfig()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer stop()
 
-	isClusterMode := conf.Cluster.ManagementUrl != ""
-	var hc hugr.Config
+	isClusterMode := config.Cluster.ManagementUrl != ""
+	var hugrConfig hugr.Config
 	if !isClusterMode {
-		ac, err := conf.Auth.Configure()
+		authConfig, err := config.Auth.Configure()
 		if err != nil {
 			log.Println("Auth configuration error:", err)
 			os.Exit(1)
 		}
-		hc = hugr.Config{
-			AdminUI:            conf.EnableAdminUI,
-			AdminUIFetchPath:   conf.AdminUIFetchPath,
-			Debug:              conf.DebugMode,
-			AllowParallel:      conf.AllowParallel,
-			MaxParallelQueries: conf.MaxParallelQueries,
-			MaxDepth:           conf.MaxDepthInTypes,
-			DB:                 conf.DB,
-			CoreDB:             coredb.New(conf.CoreDB),
-			Auth:               ac,
-			Cache:              conf.Cache,
+		hugrConfig = hugr.Config{
+			AdminUI:            config.EnableAdminUI,
+			AdminUIFetchPath:   config.AdminUIFetchPath,
+			Debug:              config.DebugMode,
+			AllowParallel:      config.AllowParallel,
+			MaxParallelQueries: config.MaxParallelQueries,
+			MaxDepth:           config.MaxDepthInTypes,
+			DB:                 config.DB,
+			CoreDB:             coredb.New(config.CoreDB),
+			Auth:               authConfig,
+			Cache:              config.Cache,
+		}
+
+		if config.DB.Path != "" {
+			log.Println("DB path: ", config.DB.Path)
+		} else {
+			log.Println("DB path is not set, using in-memory database")
+		}
+
+		if config.CoreDB.Path != "" {
+			log.Println("Core DB path: ", config.CoreDB.Path)
+		}
+
+		if config.CoreDB.Path == "" && config.CoreDB.ReadOnly {
+			log.Println("Core DB path is not set, using in-memory database, it can't be read-only")
+			os.Exit(1)
+		}
+
+		if config.CoreDB.Path == "" {
+			log.Println("Core DB path is not set, using in-memory database")
 		}
 	}
 	if isClusterMode {
 		var err error
-		hc, err = RegisterNode(ctx, conf.Cluster, conf)
+		hugrConfig, err = RegisterNode(ctx, config.Cluster, config)
 		if err != nil {
 			log.Println("Cluster registration error:", err)
 			os.Exit(1)
 		}
-		defer UnregisterNode(ctx, conf.Cluster)
+		defer UnregisterNode(ctx, config.Cluster)
+
+		log.Printf("Cluster node %s registered at %s\n", config.Cluster.NodeName, config.Cluster.ManagementUrl)
+
 	}
 	// Start the server
 
-	engine := hugr.New(hc)
+	engine := hugr.New(hugrConfig)
 
-	if conf.DB.Path != "" {
-		log.Println("DB path: ", conf.DB.Path)
-	} else {
-		log.Println("DB path is not set, using in-memory database")
-	}
-
-	if conf.CoreDB.Path != "" {
-		log.Println("Core DB path: ", conf.CoreDB.Path)
-	}
-
-	if conf.CoreDB.Path == "" && conf.CoreDB.ReadOnly {
-		log.Println("Core DB path is not set, using in-memory database, it can't be read-only")
-		os.Exit(1)
-	}
-
-	if conf.CoreDB.Path == "" {
-		log.Println("Core DB path is not set, using in-memory database")
-	}
-	if hc.Auth != nil {
-		auth.PrintSummary(hc.Auth)
+	if hugrConfig.Auth != nil {
+		auth.PrintSummary(hugrConfig.Auth)
 	}
 
 	err := engine.Init(ctx)
@@ -111,11 +116,11 @@ func main() {
 	}
 	if isClusterMode {
 		err = engine.AttachRuntimeSource(ctx, cluster.NewSource(cluster.SourceConfig{
-			ManagementNode: conf.Cluster.ManagementUrl,
-			NodeName:       conf.Cluster.NodeName,
-			NodeUrl:        conf.Cluster.NodeUrl,
-			Secret:         conf.Cluster.Secret,
-			Timeout:        conf.Cluster.Timeout,
+			ManagementNode: config.Cluster.ManagementUrl,
+			NodeName:       config.Cluster.NodeName,
+			NodeUrl:        config.Cluster.NodeUrl,
+			Secret:         config.Cluster.Secret,
+			Timeout:        config.Cluster.Timeout,
 		}))
 		if err != nil {
 			log.Println("Attach cluster source error:", err)
@@ -124,16 +129,20 @@ func main() {
 	}
 
 	srv := &http.Server{
-		Addr:    conf.Bind,
-		Handler: cors.Middleware(conf.Cors)(engine),
+		Addr:    config.Bind,
+		Handler: cors.Middleware(config.Cors)(engine),
 	}
 
 	go func() {
-		log.Println("Starting server on ", conf.Bind)
-		if conf.DebugMode {
+		log.Println("Starting server on ", config.Bind)
+		if config.DebugMode {
 			log.Println("Debug mode on")
 		}
 		err := srv.ListenAndServe()
+		if errors.Is(err, http.ErrServerClosed) {
+			log.Println("Server stopped")
+			return
+		}
 		if err != nil {
 			log.Println("Server error:", err)
 			os.Exit(1)

@@ -135,12 +135,12 @@ func main() {
 			log.Println("failed to read migration:", err)
 			os.Exit(1)
 		}
-		sql, err := db.ParseSQLScriptTemplate(dbType, string(b))
+		parsedSQL, err := db.ParseSQLScriptTemplate(dbType, string(b))
 		if err != nil {
 			log.Println("failed to parse migration:", err)
 			os.Exit(1)
 		}
-		_, err = conn.Exec(sql)
+		_, err = conn.Exec(parsedSQL)
 		if err != nil {
 			log.Println("failed to apply migration:", err)
 			os.Exit(1)
