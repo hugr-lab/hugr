@@ -9,7 +9,7 @@ LDFLAGS := "-X 'main.Version=$(GIT_VERSION)' -X 'main.BuildDate=$(BUILD_DATE)'"
 all: management server migrate
 
 management:
-	CGO_ENABLED=1 go build -tags='duckdb_arrow' -ldflags=$(LDFLAGS) -o management cmd/management/
+	CGO_ENABLED=1 go build -tags='duckdb_arrow' -ldflags=$(LDFLAGS) -o management cmd/management/*.go
 
 server:
 	CGO_ENABLED=1 go build -tags='duckdb_arrow' -ldflags=$(LDFLAGS) -o server cmd/server/*.go
