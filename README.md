@@ -136,7 +136,7 @@ There are two types of cache: L1 and L2. L1 cache is in-memory cache (using [big
 
 ### OIDC integration settings
 
-- OIDC_ISSUER - OIDC issuer URL, default: "", example: "https://example.com"
+- OIDC_ISSUER - OIDC issuer URL, default: "", example: ```"https://example.com"```
 - OIDC_CLIENT_ID - OIDC client ID, default: "", example: "client_id"
 - OIDC_CLIENT_TIMEOUT - OIDC client timeout, default: 5s, example: "5s". It is used to set the timeout for the OIDC client.
 - OIDC_TLS_INSECURE - flag to disable TLS verification, default: false
