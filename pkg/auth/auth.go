@@ -1,4 +1,4 @@
-package main
+package auth
 
 import (
 	"encoding/json"
@@ -11,20 +11,21 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type AuthConfig struct {
-	AllowedAnonymous bool
-	AnonymousRole    string
+type Config struct {
+	ManagementApiKeys bool   `json:"managed_api_keys"`
+	AllowedAnonymous  bool   `json:"allowed_anonymous"`
+	AnonymousRole     string `json:"anonymous_role"`
 
 	// API Key with default admin role should be provided in the header x-hugr-secret-key
-	SecretKey string
+	SecretKey string `json:"-"`
 
-	ConfigFile string
+	ConfigFile string `json:"-"`
 }
 
-func (c *AuthConfig) Configure() (*auth.Config, error) {
+func (c *Config) Configure() (*auth.Config, error) {
 	config := &auth.Config{}
 	if c.ConfigFile != "" {
-		pc, err := loadAuthProviderConfigFile(c.ConfigFile)
+		pc, err := LoadFile(c.ConfigFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load auth config file: %w", err)
 		}
@@ -46,6 +47,9 @@ func (c *AuthConfig) Configure() (*auth.Config, error) {
 		}
 		if pc.SecretKey != "" {
 			c.SecretKey = pc.SecretKey
+		}
+		if pc.ManagedAPIKeysEnabled {
+			c.ManagementApiKeys = pc.ManagedAPIKeysEnabled
 		}
 	}
 
@@ -72,6 +76,7 @@ func (c *AuthConfig) Configure() (*auth.Config, error) {
 			}),
 		)
 	}
+	config.DBApiKeysEnabled = c.ManagementApiKeys
 
 	if len(config.Providers) == 0 {
 		return nil, nil
@@ -79,10 +84,12 @@ func (c *AuthConfig) Configure() (*auth.Config, error) {
 	return config, nil
 }
 
-type providersConfig struct {
-	Anonymous auth.AnonymousConfig         `json:"anonymous" yaml:"anonymous"`
-	APIKeys   map[string]auth.ApiKeyConfig `json:"api_keys" yaml:"api-keys"`
-	JWT       map[string]auth.JwtConfig    `json:"jwt" yaml:"jwt"`
+type ProvidersConfig struct {
+	ManagedAPIKeysEnabled bool                         `json:"managed_api_keys" yaml:"managed_api_keys-api-keys-enabled"`
+	Anonymous             auth.AnonymousConfig         `json:"anonymous" yaml:"anonymous"`
+	APIKeys               map[string]auth.ApiKeyConfig `json:"api_keys" yaml:"api-keys"`
+	JWT                   map[string]auth.JwtConfig    `json:"jwt" yaml:"jwt"`
+	OIDC                  OIDCConfig                   `json:"oidc" yaml:"oidc"`
 
 	RedirectLoginPaths []string `json:"redirect_login_paths" yaml:"redirect-login-paths"`
 	LoginUrl           string   `json:"login_url" yaml:"login-url"`
@@ -90,7 +97,7 @@ type providersConfig struct {
 	SecretKey          string   `json:"secret_key" yaml:"secret-key"`
 }
 
-func loadAuthProviderConfigFile(configFile string) (c *providersConfig, err error) {
+func LoadFile(configFile string) (c *ProvidersConfig, err error) {
 	b, err := os.ReadFile(configFile)
 	if err != nil {
 		return nil, err
@@ -106,16 +113,16 @@ func loadAuthProviderConfigFile(configFile string) (c *providersConfig, err erro
 	return c, err
 }
 
-func printAuthSummary(c *auth.Config) {
+func PrintSummary(c *auth.Config) {
 	log.Printf("Auth: Number of providers: %d", len(c.Providers))
 	for i, p := range c.Providers {
 		switch v := p.(type) {
 		case *auth.ApiKeyProvider:
-			if v.Name == "x-hugr-secret" {
+			if v.Name() == "x-hugr-secret" {
 				log.Printf("Provider %d: Type: Secret", i)
 				continue
 			}
-			log.Printf("Auth: Provider %d: Type: APIKey, Name: %s", i, v.Name)
+			log.Printf("Auth: Provider %d: Type: APIKey, Name: %s", i, v.Name())
 		case *auth.JwtProvider:
 			log.Printf("Auth: Provider %d: Type: JWT, Issuer: %s", i, v.Issuer)
 		case *auth.AnonymousProvider:
@@ -123,6 +130,9 @@ func printAuthSummary(c *auth.Config) {
 		default:
 			log.Printf("Auth: Provider %d: Type: %T", i, v)
 		}
+	}
+	if c.DBApiKeysEnabled {
+		log.Printf("Auth: Managed API Keys enabled")
 	}
 	if c.LoginUrl != "" {
 		log.Printf("Auth: LoginUrl: %+v", c.LoginUrl)

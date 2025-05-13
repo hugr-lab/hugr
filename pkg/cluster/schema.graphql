@@ -1,0 +1,75 @@
+extend type Function {
+    data_source_status(
+        name: String!
+    ): [cluster_data_source_status]
+        @function(name: "core_cluster_data_source_status")
+
+    nodes: [cluster_nodes]
+        @function(name: "core_cluster_nodes")
+
+    storages: [registered_storages]
+        @function(name: "core_cluster_registered_s3")
+}
+
+extend type MutationFunction {
+    """
+        Load/Reload data source catalog
+    """
+    load_data_source(
+        name: String!
+    ): OperationResult
+        @function(name: "core_cluster_load_data_source")
+
+    """
+        Unload data source catalog without deleting
+    """
+    unload_data_source(
+        name: String!
+    ): OperationResult
+        @function(name: "core_cluster_unload_data_source")
+    
+    register_s3(
+        name: String!
+        key: String!
+        secret: String!
+        region: String!
+        endpoint: String!
+        use_ssl: Boolean!
+        url_style: String!
+        scope: String! 
+    ): OperationResult
+        @function(name: "core_cluster_register_s3")
+
+    unregister_s3(
+        name: String!
+    ): OperationResult
+        @function(name: "core_cluster_unregister_s3")
+}
+
+
+type registered_storages @view(name: "core_cluster_registered_s3") {
+    node: String! @pk
+    name: String! @pk
+    type: String!
+    key: String
+    region: String
+    endpoint: String
+    use_ssl: Boolean
+    url_style: String
+    scope: [String]
+}
+
+type cluster_nodes @view(name: "core_cluster_nodes") {
+    name: String! @pk
+    version: String!
+    error: String!
+    last_seen: Timestamp!
+    url: String!
+    ready: Boolean!
+}
+
+type cluster_data_source_status {
+    node: String!
+    status: String!
+    error: String!
+}

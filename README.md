@@ -58,8 +58,21 @@ The common way to deploy the Hugr is to use Docker. The Docker image provided by
 - DB_WORKER_THREADS - number of worker threads, default: 0 (number of CPU cores)
 - DB_PG_CONNECTION_LIMIT - maximal number of connections to the database, default: 64
 - DB_PG_PAGES_PER_TASK - number of pages per task, default: 1000
-- CORE_DB_PATH - path to core-db file, if empty in memory storage is used, default: ""
+
+### CoreDB settings
+
+The core-db is used to store the metadata for the data sources and to manage the access to the data sources.
+The core-db  stores data sources, catalog sources, roles and role permissions, and other metadata.
+It can be a DuckDB file, in-memory storage or PostgreSQL. Core-db based on the PostgreSQL is used for the cluster mode (to make all replicas on the same page).
+The DuckDB file can placed in the local file system or in the cloud storage (currently support only s3 cloud storage, in plan: Azure, GCS, AWS, R2), in that case path should be s3://bucket/path/to/file.duckdb.
+
+- CORE_DB_PATH - path to core-db file or PostgreSQL DSN, if empty in memory storage is used, default: ""
 - CORE_DB_READONLY - flag to open core-db in read-only mode, default: false
+- CORE_DB_S3_ENDPOINT - s3 endpoint, default: ""
+- CORE_DB_S3_REGION - s3 region, default: ""
+- CORE_DB_S3_KEY - s3 access key, default: ""
+- CORE_DB_S3_SECRET - s3 secret key, default: ""
+- CORE_DB_S3_USE_SSL - flag to use SSL for s3, default: false
 
 ### CORS
 
@@ -70,6 +83,7 @@ The common way to deploy the Hugr is to use Docker. The Docker image provided by
 ### Authentication and authorization
 
 - ALLOWED_ANONYMOUS - flag to allow anonymous access, default: true
+- ALLOWED_MANAGED_API_KEYS - flag to allow managed API keys (though GraphQL API), default: false
 - ANONYMOUS_ROLE - role for anonymous user, default: "anonymous"
 - SECRET_KEY - api key that used for authentication, default: ""
 - AUTH_CONFIG_FILE - path to the file with authentication config, default: ""

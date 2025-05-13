@@ -1,4 +1,4 @@
-package main
+package cors
 
 import (
 	"net/http"
@@ -6,13 +6,13 @@ import (
 	"strings"
 )
 
-type CorsConfig struct {
-	CorsAllowedOrigins []string
-	CorsAllowedHeaders []string
-	CorsAllowedMethods []string
+type Config struct {
+	CorsAllowedOrigins []string `json:"cors_allowed_origins"`
+	CorsAllowedHeaders []string `json:"cors_allowed_headers"`
+	CorsAllowedMethods []string `json:"cors_allowed_methods"`
 }
 
-func corsMiddleware(c CorsConfig) func(next http.Handler) http.Handler {
+func Middleware(c Config) func(next http.Handler) http.Handler {
 	if len(c.CorsAllowedOrigins) == 0 {
 		return func(next http.Handler) http.Handler {
 			return next

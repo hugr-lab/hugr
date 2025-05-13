@@ -1,0 +1,83 @@
+extend type Function {
+  info: NodeInfo! @function(name: "node_info") @module(name: "core")
+  version: NodeVersion! @function(name: "node_version") @module(name: "core")
+}
+
+type NodeInfo {
+  cluster_mode: Boolean!
+  management_node: String!
+  version: String!
+  build_date: String!
+  config: NodeConfig! @field_source(field: "engine")
+}
+
+type NodeVersion {
+  version: String!
+  build_date: String!
+}
+
+type NodeConfig {
+  admin_ui: Boolean!
+  debug: Boolean!
+  allow_parallel: Boolean!
+  max_parallel_queries: Int!
+  max_depth: Int!
+  duckdb: DuckDBConfig!
+  coredb: CoreDBConfig!
+  auth: [AuthProviderConfig!]
+  cache: CacheConfig!
+}
+
+type DuckDBConfig {
+  path: String!
+  max_open_conns: Int!
+  max_idle_conns: Int!
+
+  settings: DuckDBSettings!
+}
+
+type DuckDBSettings {
+  allowed_directories: [String]
+  allowed_paths: [String]
+  enable_logging: Boolean
+  max_memory: Int
+  max_temp_directory_size: Int
+  temp_directory: String
+  worker_threads: Int
+  pg_connection_limit: Int
+  pg_pages_per_task: Int
+}
+
+type CoreDBConfig {
+  version: String!
+  type: Boolean!
+}
+
+type AuthProviderConfig {
+  type: String!
+  name: String!
+}
+
+type CacheConfig {
+  ttl: String!
+  l1: CacheL1Config!
+  l2: CacheL2Config!
+}
+
+type CacheL1Config {
+  enabled: Boolean!
+  max_size: Int!
+  max_item_size: Int!
+  shards: Int!
+  clean_time: String!
+  eviction_time: String!
+}
+
+type CacheL2Config {
+  enabled: Boolean!
+  backend: String!
+  addresses: [String!]
+  database: String!
+  username: String!
+  password: String!
+}
