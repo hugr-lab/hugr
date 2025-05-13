@@ -15,6 +15,14 @@ MySQL, SQLLite, Clickhouse will be supported in the future.
 
 ## Executable
 
+There are 3 executables provided in the repository:
+
+- cmd/server/main.go - main executable for the Hugr server,
+- cmd/migrate/main.go - executable for the core-db migrations,
+- cmd/management/main.go - executable for the cluster management node.
+
+In the cluster the core-db should be PostgreSQL, in the other nodes it can be DuckDB file or PostgreSQL.
+
 The executable is built with Go and can be run on any platform that supports Go. The executable is built with the following command:
 
 ```bash
@@ -31,8 +39,9 @@ The common way to deploy the Hugr is to use Docker. The Docker image provided by
 
 - ghcr.io/hugr-lab/server - simple hugr server,
 - ghcr.io/hugr-lab/automigrate - simple hugr server with automigration for the core-db schema.
+- ghcr.io/hugr-lab/cluster_management - hugr management node for the cluster mode.
 
-## Environment variables
+## Environment variables for the server
 
 ### General
 
@@ -58,6 +67,14 @@ The common way to deploy the Hugr is to use Docker. The Docker image provided by
 - DB_WORKER_THREADS - number of worker threads, default: 0 (number of CPU cores)
 - DB_PG_CONNECTION_LIMIT - maximal number of connections to the database, default: 64
 - DB_PG_PAGES_PER_TASK - number of pages per task, default: 1000
+
+### Cluster settings
+
+- CLUSTER_SECRET - secret key for the cluster, default: "", example: "secret". It is used to secure the cluster communication.
+- CLUSTER_MANAGEMENT_URL - URL of the cluster management node, default: "", example: ```"http://localhost:14000"```. It is used to connect to the cluster management node.
+- CLUSTER_NODE_NAME - name of the node, default: "", example: "node1". It is used to identify the node in the cluster.
+- CLUSTER_NODE_URL - URL of the node, by that the management node can connect to the node though Hugr IPC protocol, default: "", example: ```"http://localhost:15000/ipc"```. It is used to connect to the node.
+- CLUSTER_TIMEOUT - timeout to communicate with the cluster management node, default: 5s, example: "5s". It is used to set the timeout for the cluster communication.
 
 ### CoreDB settings
 
@@ -107,6 +124,42 @@ There are two types of cache: L1 and L2. L1 cache is in-memory cache (using [big
 - CACHE_L2_DATABASE - database name for L2 cache (use for redis only)
 - CACHE_L2_USERNAME - username for L2 cache (use for redis only)
 - CACHE_L2_PASSWORD - password for L2 cache (use for redis only)
+
+## Environment variables for the management node
+
+### General cluster settings
+
+- BIND - string, that defines network interface and port, default: :14000
+- CLUSTER_SECRET - secret key for the cluster, default: "", example: "secret". It is used to secure the cluster communication.
+- TIMEOUT - timeout to communicate with the cluster nodes, default: 5s, example: "5s". It is used to set the timeout for the cluster communication, default: 30s.
+- CHECK - interval to check the cluster nodes, default: 1m, example: "5s". It is used to set the interval for the cluster communication.
+
+### Common node settings
+
+The following settings will be advertised to the cluster nodes:
+
+In general:
+
+- ADMIN_UI - flag to enable AdminUI, for path /admin (GraphiQL), default: true
+- ADMIN_UI_FETCH_PATH - path to fetch AdminUI, default: "/admin"
+- DEBUG - flag to run in debug mode (SQL queries will output to the stdout), default: false
+
+CORS:
+
+- CORS_ALLOWED_ORIGINS - comma separated list of allowed origins for CORS, default: "", example: ```"http://localhost:3000,http://localhost:3001"```
+- CORS_ALLOWED_METHODS - comma separated list of allowed methods for CORS, default: "GET,POST,PUT,DELETE,OPTIONS"
+- CORS_ALLOWED_HEADERS - comma separated list of allowed headers for CORS, default: ""Content-Type,Authorization,x-api-key,Accept,Content-Length,Accept-Encoding,X-CSRF-Token"
+
+CoreDB:
+
+- CORE_DB_PATH - path to core-db PostgreSQL DSN, in the cluster mode it should be PostgreSQL, default: ""
+
+Auth:
+
+- ALLOWED_ANONYMOUS - flag to allow anonymous access, default: false
+- ANONYMOUS_ROLE - role for anonymous user, default: ""
+- ALLOWED_MANAGED_API_KEYS - flag to allow managed API keys (though GraphQL API), default: false
+- AUTH_CONFIG_FILE - path to the file with authentication config, default: ""
 
 ## CoreDB migrations
 

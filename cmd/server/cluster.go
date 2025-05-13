@@ -117,11 +117,9 @@ func RegisterNode(ctx context.Context, c ClusterConfig, lc Config) (hugr.Config,
 		if name == "x-hugr-secret" {
 			continue
 		}
-		apiKey := hauth.NewApiKey(name, pc)
-		if err != nil {
-			return hugr.Config{}, err
-		}
-		hc.Auth.Providers = append(hc.Auth.Providers, apiKey)
+		hc.Auth.Providers = append(hc.Auth.Providers,
+			hauth.NewApiKey(name, pc),
+		)
 	}
 
 	// 3. jwt
