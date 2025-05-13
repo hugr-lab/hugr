@@ -134,6 +134,18 @@ There are two types of cache: L1 and L2. L1 cache is in-memory cache (using [big
 - TIMEOUT - timeout to communicate with the cluster nodes, default: 5s, example: "5s". It is used to set the timeout for the cluster communication, default: 30s.
 - CHECK - interval to check the cluster nodes, default: 1m, example: "5s". It is used to set the interval for the cluster communication.
 
+### OIDC integration settings
+
+- OIDC_ISSUER - OIDC issuer URL, default: "", example: "https://example.com"
+- OIDC_CLIENT_ID - OIDC client ID, default: "", example: "client_id"
+- OIDC_CLIENT_TIMEOUT - OIDC client timeout, default: 5s, example: "5s". It is used to set the timeout for the OIDC client.
+- OIDC_TLS_INSECURE - flag to disable TLS verification, default: false
+- OIDC_COOKIE_NAME - OIDC cookie name, default: "", example: "hugr_oidc"
+- OIDC_SCOPE_ROLE_PREFIX - OIDC scope role prefix, default: "", example: "hugr:"
+- OIDC_USERNAME_CLAIM - OIDC username claim, default: "name", example: "name"
+- OIDC_USERID_CLAIM - OIDC user ID claim, default: "sub", example: "sub"
+- OIDC_ROLE_CLAIM - OIDC role claim, default: "x-hugr-role", example: "x-hugr-role"
+
 ### Common node settings
 
 The following settings will be advertised to the cluster nodes:
