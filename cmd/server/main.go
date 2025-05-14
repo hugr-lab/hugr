@@ -107,9 +107,11 @@ func main() {
 	defer engine.Close()
 
 	err = engine.AttachRuntimeSource(ctx, info.New(info.NodeInfo{
-		Version:   Version,
-		BuildDate: BuildDate,
-		Engine:    engine.Info(),
+		Version:        Version,
+		BuildDate:      BuildDate,
+		InCluster:      isClusterMode,
+		ManagementNode: config.Cluster.ManagementUrl,
+		Engine:         engine.Info(),
 	}))
 	if err != nil {
 		log.Println("Attach version source error:", err)

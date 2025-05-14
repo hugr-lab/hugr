@@ -80,6 +80,7 @@ func loadConfig() Config {
 			MaxOpenConns: viper.GetInt("DB_MAX_OPEN_CONNS"),
 			MaxIdleConns: viper.GetInt("DB_MAX_IDLE_CONNS"),
 			Settings: db.Settings{
+				HomeDirectory:        viper.GetString("DB_HOME_DIRECTORY"),
 				AllowedDirectories:   viper.GetStringSlice("DB_ALLOWED_DIRECTORIES"),
 				AllowedPaths:         viper.GetStringSlice("DB_ALLOWED_PATHS"),
 				EnableLogging:        viper.GetBool("DB_ENABLE_LOGGING"),

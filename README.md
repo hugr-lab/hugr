@@ -55,6 +55,7 @@ The common way to deploy the Hugr is to use Docker. The Docker image provided by
 
 ### DuckDB engine settings
 
+- DB_HOME_DIRECTORY - path to the DuckDB home directory, default: "", example: "/data/.hugr". This very important to make persistence secrets (like S3 credentials) in container environments.
 - DB_PATH - path to management db file, if empty in memory storage is used, default: ""
 - DB_MAX_OPEN_CONNS - maximal number of open connections to the database, default: 0 (unlimited)
 - DB_MAX_IDLE_CONNS - maximal number of idle connections to the database, default: 0 (unlimited)
