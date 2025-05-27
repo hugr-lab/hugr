@@ -1,6 +1,6 @@
 # Variables
 BUILD_DATE := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
-GIT_VERSION := $(shell git describe --tags --always --dirty)
+GIT_VERSION ?= $(shell git describe --tags --always --dirty)
 LDFLAGS := "-X 'main.Version=$(GIT_VERSION)' -X 'main.BuildDate=$(BUILD_DATE)'"
 
 # Targets

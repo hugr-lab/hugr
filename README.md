@@ -46,6 +46,7 @@ The common way to deploy the Hugr is to use Docker. The Docker image provided by
 ### General
 
 - BIND - string, that defines network interface and port, default: :15000
+- SERVICE_BIND - string, that defines network interface and port for the metrics and health check, if it is not set up than http server for the service will not start, default: ""
 - ADMIN_UI - flag to enable AdminUI, for path /admin ([GraphiQL](https://github.com/graphql/graphiql)), default: true
 - ADMIN_UI_FETCH_PATH - path to fetch AdminUI, default: "/admin"
 - DEBUG - flag to run in debug mode (SQL queries will output to the stdout), default: false
