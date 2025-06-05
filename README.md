@@ -1,8 +1,10 @@
-# HUGR
+# hugr
+
+[Documentation](https://hugr-lab.github.io/) | [GitHub](https://github.com/hugr-lab/hugr)
 
 The DataMesh service that provides access to various data sources through common GraphQL API.
 
-The Hugr is built on the top of [DuckDB](https://duckdb.org) and uses it as an calculation engine. The Hugr can work with following data sources:
+The hugr is built on the top of [DuckDB](https://duckdb.org) and uses it as an calculation engine. The hugr can work with following data sources:
 
 - PostgreSQL (incl. with extensions: PostGIS, TimescaleDB)
 - DuckDB files
