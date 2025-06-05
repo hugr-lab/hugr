@@ -4,7 +4,7 @@ go 1.24.2
 
 require (
 	github.com/coreos/go-oidc/v3 v3.14.1
-	github.com/hugr-lab/query-engine v0.1.13
+	github.com/hugr-lab/query-engine v0.1.14
 	github.com/joho/godotenv v1.5.1
 	github.com/marcboeker/go-duckdb/v2 v2.3.0
 	github.com/prometheus/client_golang v1.22.0
