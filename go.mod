@@ -4,7 +4,7 @@ go 1.24.2
 
 require (
 	github.com/coreos/go-oidc/v3 v3.14.1
-	github.com/hugr-lab/query-engine v0.1.17
+	github.com/hugr-lab/query-engine v0.1.18
 	github.com/joho/godotenv v1.5.1
 	github.com/marcboeker/go-duckdb/v2 v2.3.3
 	github.com/prometheus/client_golang v1.22.0
@@ -15,10 +15,12 @@ require (
 require (
 	github.com/apache/arrow-go/v18 v18.4.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.1 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/uber/h3-go/v4 v4.3.0 // indirect
+	go.mongodb.org/mongo-driver v1.17.4 // indirect
 )
 
 require (
