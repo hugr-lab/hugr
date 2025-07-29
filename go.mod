@@ -1,12 +1,12 @@
 module github.com/hugr-lab/hugr
 
-go 1.24.2
+go 1.24.5
 
 require (
 	github.com/coreos/go-oidc/v3 v3.14.1
-	github.com/hugr-lab/query-engine v0.1.20
+	github.com/hugr-lab/query-engine v0.1.21
 	github.com/joho/godotenv v1.5.1
-	github.com/marcboeker/go-duckdb/v2 v2.3.3
+	github.com/marcboeker/go-duckdb/v2 v2.3.4
 	github.com/prometheus/client_golang v1.22.0
 	github.com/spf13/viper v1.20.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -74,8 +74,8 @@ require (
 	github.com/prometheus/common v0.65.0 // indirect
 	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/redis/go-redis/v9 v9.11.0 // indirect
-	github.com/sagikazarmark/locafero v0.9.0 // indirect
-	github.com/sourcegraph/conc v0.3.0 // indirect
+	github.com/sagikazarmark/locafero v0.10.0 // indirect
+	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
 	github.com/spf13/afero v1.14.0 // indirect
 	github.com/spf13/cast v1.9.2 // indirect
 	github.com/spf13/pflag v1.0.7 // indirect
@@ -85,7 +85,6 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.uber.org/mock v0.5.2 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.40.0 // indirect
 	golang.org/x/exp v0.0.0-20250718183923-645b1fa84792 // indirect
 	golang.org/x/mod v0.26.0 // indirect
