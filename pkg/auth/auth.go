@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -22,7 +23,7 @@ type Config struct {
 	ConfigFile string `json:"-"`
 }
 
-func (c *Config) Configure() (*auth.Config, error) {
+func (c *Config) Configure(ctx context.Context) (*auth.Config, error) {
 	config := &auth.Config{}
 	if c.ConfigFile != "" {
 		pc, err := LoadFile(c.ConfigFile)
@@ -41,6 +42,15 @@ func (c *Config) Configure() (*auth.Config, error) {
 			}
 			config.Providers = append(config.Providers, jwtProvider)
 		}
+
+		if pc.OIDC.Issuer != "" {
+			oidc, err := NewOIDCProvider(ctx, pc.OIDC)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create OIDC provider: %w", err)
+			}
+			config.Providers = append(config.Providers, oidc)
+		}
+
 		if pc.Anonymous.Allowed {
 			c.AllowedAnonymous = true
 			c.AnonymousRole = pc.Anonymous.Role
@@ -102,15 +112,17 @@ func LoadFile(configFile string) (c *ProvidersConfig, err error) {
 	if err != nil {
 		return nil, err
 	}
+	var conf ProvidersConfig
 	switch {
 	case strings.HasSuffix(configFile, ".json"):
-		err = json.Unmarshal(b, c)
-	case strings.HasSuffix(configFile, ".yaml"):
-		err = yaml.Unmarshal(b, c)
+		err = json.Unmarshal(b, &conf)
+	case strings.HasSuffix(configFile, ".yaml") ||
+		strings.HasSuffix(configFile, ".yml"):
+		err = yaml.Unmarshal(b, &conf)
 	default:
 		return nil, fmt.Errorf("unsupported config file format: %s", configFile)
 	}
-	return c, err
+	return &conf, err
 }
 
 func PrintSummary(c *auth.Config) {
@@ -127,6 +139,8 @@ func PrintSummary(c *auth.Config) {
 			log.Printf("Auth: Provider %d: Type: JWT, Issuer: %s", i, v.Issuer)
 		case *auth.AnonymousProvider:
 			log.Printf("Auth: Provider %d: Type: Anonymous, Allowed: %t, Role: %s", i, v.Config.Allowed, v.Config.Role)
+		case *OIDCProvider:
+			log.Printf("Auth: Provider %d: Type: OIDC, Issuer: %s, ClientID: %s", i, v.c.Issuer, v.c.ClientID)
 		default:
 			log.Printf("Auth: Provider %d: Type: %T", i, v)
 		}

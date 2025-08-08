@@ -42,7 +42,7 @@ func main() {
 	isClusterMode := config.Cluster.ManagementUrl != ""
 	var hugrConfig hugr.Config
 	if !isClusterMode {
-		authConfig, err := config.Auth.Configure()
+		authConfig, err := config.Auth.Configure(ctx)
 		if err != nil {
 			log.Println("Auth configuration error:", err)
 			os.Exit(1)

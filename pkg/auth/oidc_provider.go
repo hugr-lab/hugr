@@ -16,12 +16,12 @@ import (
 
 type OIDCConfig struct {
 	Issuer      string        `json:"issuer" yaml:"issuer"`
-	ClientID    string        `json:"client_id" yaml:"client-id"`
+	ClientID    string        `json:"client_id" yaml:"client_id"`
 	Timeout     time.Duration `json:"timeout" yaml:"timeout"`
-	TLSInsecure bool          `json:"tls_insecure" yaml:"tls-insecure"`
-	CookieName  string        `json:"cookie_name" yaml:"cookie-name"`
+	TLSInsecure bool          `json:"tls_insecure" yaml:"tls_insecure"`
+	CookieName  string        `json:"cookie_name" yaml:"cookie_name"`
 
-	ScopeRolePrefix string                  `json:"scope_role_prefix" yaml:"scope-role-prefix"`
+	ScopeRolePrefix string                  `json:"scope_role_prefix" yaml:"scope_role_prefix"`
 	Claims          auth.UserAuthInfoConfig `json:"claims" yaml:"claims"`
 }
 
@@ -95,6 +95,9 @@ func (p *OIDCProvider) Type() string {
 
 func (p *OIDCProvider) Authenticate(r *http.Request) (*auth.AuthInfo, error) {
 	token, err := p.extractor.ExtractToken(r)
+	if errors.Is(err, request.ErrNoTokenInRequest) {
+		return nil, auth.ErrSkipAuth
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -103,6 +106,10 @@ func (p *OIDCProvider) Authenticate(r *http.Request) (*auth.AuthInfo, error) {
 	}
 
 	idToken, err := p.verifier.Verify(r.Context(), token)
+	var oidcErr *oidc.TokenExpiredError
+	if errors.As(err, &oidcErr) {
+		return nil, auth.ErrTokenExpired
+	}
 	if err != nil {
 		return nil, auth.ErrForbidden
 	}
@@ -139,5 +146,6 @@ func (p *OIDCProvider) Authenticate(r *http.Request) (*auth.AuthInfo, error) {
 		UserName:     userName,
 		AuthType:     p.Type(),
 		AuthProvider: p.Name(),
+		Token:        token,
 	}, nil
 }

@@ -66,12 +66,23 @@ secret_key: "your_secret_key_here"
     - **role**: Claim key for the role.
     - **user_id**: Claim key for the user ID.
     - **user_name**: Claim key for the user name.
+  
+- **oidc**: OpenID Connect provider configuration (not shown in the example but can be added similarly).
+  - **issuer**: The issuer URL for the OIDC provider.
+  - **client_id**: The client ID for the OIDC application.
+  - **timeout**: The timeout duration for OIDC requests.
+  - **tls_insecure**: Boolean indicating if TLS verification should be skipped.
+  - **cookie_name**: The name of the cookie to store the OIDC token.
+  - **scope_role_prefix**: Prefix used for role scopes in OIDC.
+  - **claims**: Configuration for claims mapping in OIDC.
+    - **role**: Claim key for the role.
+    - **user_id**: Claim key for the user ID.
+    - **user_name**: Claim key for the user name.
 
 - **managed_api_keys**: Boolean indicating if API keys are managed by the application.
 - **redirect_login_paths**: List of paths to redirect to for login.
 
 - **login_url**: URL for the login page.
-
 - **redirect_url**: URL to redirect to after successful authentication.
 
 - **secret_key**: API Key that should be provided in the header X-Hugr-Secret to access the API with admin role. The default headers to identify the user are:

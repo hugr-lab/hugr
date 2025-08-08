@@ -438,17 +438,11 @@ func (s *Service) unregisterS3Handler(w http.ResponseWriter, r *http.Request) {
 	}
 	var errMsg string
 	go func() {
-		for {
-			select {
-			case err, ok := <-errCh:
-				if !ok {
-					return
-				}
-				if errMsg != "" {
-					errMsg += ";\n"
-				}
-				errMsg += err.Error()
+		for err := range errCh {
+			if errMsg != "" {
+				errMsg += ";\n"
 			}
+			errMsg += err.Error()
 		}
 	}()
 	wg.Wait()
