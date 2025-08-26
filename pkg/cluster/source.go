@@ -95,8 +95,8 @@ func (s *Source) Attach(ctx context.Context, pool *db.Pool) error {
 	// register views
 	duckdb.RegisterReplacementScan(pool.Connector(), func(tableName string) (string, []any, error) {
 		switch tableName {
-		case "core_cluster_registered_s3":
-			return "core_cluster_registered_s3", nil, nil
+		case "core_cluster_registered_storages":
+			return "core_cluster_registered_storages", nil, nil
 		case "core_cluster_nodes":
 			return "core_cluster_nodes", nil, nil
 		default:
@@ -196,20 +196,16 @@ func (s *Source) Attach(ctx context.Context, pool *db.Pool) error {
 
 	err = pool.RegisterTableRowFunction(ctx,
 		&db.TableRowFunctionNoArgs[StorageInfo]{
-			Name: "core_cluster_registered_s3",
+			Name: "core_cluster_registered_object_storages",
 			Execute: func(ctx context.Context) ([]StorageInfo, error) {
-				return s.RegisteredS3(ctx)
+				return s.RegisteredObjectStorages(ctx)
 			},
 			ColumnInfos: []duckdb.ColumnInfo{
 				{Name: "node", T: runtime.DuckDBTypeInfoByNameMust("VARCHAR")},
 				{Name: "name", T: runtime.DuckDBTypeInfoByNameMust("VARCHAR")},
 				{Name: "type", T: runtime.DuckDBTypeInfoByNameMust("VARCHAR")},
-				{Name: "key", T: runtime.DuckDBTypeInfoByNameMust("VARCHAR")},
 				{Name: "scope", T: runtime.DuckDBListInfoByNameMust("VARCHAR")},
-				{Name: "region", T: runtime.DuckDBTypeInfoByNameMust("VARCHAR")},
-				{Name: "endpoint", T: runtime.DuckDBTypeInfoByNameMust("VARCHAR")},
-				{Name: "use_ssl", T: runtime.DuckDBTypeInfoByNameMust("BOOLEAN")},
-				{Name: "url_style", T: runtime.DuckDBTypeInfoByNameMust("VARCHAR")},
+				{Name: "parameters", T: runtime.DuckDBTypeInfoByNameMust("VARCHAR")},
 			},
 			FillRow: func(out StorageInfo, row duckdb.Row) error {
 				err := duckdb.SetRowValue(row, 0, out.Node)
@@ -224,27 +220,7 @@ func (s *Source) Attach(ctx context.Context, pool *db.Pool) error {
 				if err != nil {
 					return err
 				}
-				err = duckdb.SetRowValue(row, 3, out.KeyID)
-				if err != nil {
-					return err
-				}
-				err = duckdb.SetRowValue(row, 4, out.Scope)
-				if err != nil {
-					return err
-				}
-				err = duckdb.SetRowValue(row, 5, out.Region)
-				if err != nil {
-					return err
-				}
-				err = duckdb.SetRowValue(row, 6, out.Endpoint)
-				if err != nil {
-					return err
-				}
-				err = duckdb.SetRowValue(row, 7, out.UseSSL)
-				if err != nil {
-					return err
-				}
-				err = duckdb.SetRowValue(row, 8, out.URLStyle)
+				err = duckdb.SetRowValue(row, 3, out.Parameters)
 				if err != nil {
 					return err
 				}
@@ -272,31 +248,60 @@ func (s *Source) Attach(ctx context.Context, pool *db.Pool) error {
 		return err
 	}
 
-	// register S3
+	// register object storage
 	err = pool.RegisterScalarFunction(ctx,
-		&db.ScalarFunctionWithArgs[storage.S3Info, *types.OperationResult]{
-			Name: "core_cluster_register_s3",
-			Execute: func(ctx context.Context, info storage.S3Info) (*types.OperationResult, error) {
-				err := s.RegisterS3(ctx, info)
+		&db.ScalarFunctionWithArgs[storage.SecretInfo, *types.OperationResult]{
+			Name: "core_cluster_register_object_storage",
+			Execute: func(ctx context.Context, info storage.SecretInfo) (*types.OperationResult, error) {
+				err := s.RegisterObjectStorage(ctx, info)
 				if err != nil {
 					return types.ErrResult(err), nil
 				}
-				return types.Result("S3 storage registered", 1, 0), nil
+				return types.Result("Object storage registered", 1, 0), nil
 			},
-			ConvertInput: func(args []driver.Value) (storage.S3Info, error) {
-				if len(args) != 8 {
-					return storage.S3Info{}, fmt.Errorf("invalid number of arguments")
+			ConvertInput: func(args []driver.Value) (storage.SecretInfo, error) {
+				if len(args) != 12 {
+					return storage.SecretInfo{}, fmt.Errorf("invalid number of arguments")
 				}
-				return storage.S3Info{
-					Name:     args[0].(string),
-					Type:     "s3",
-					KeyID:    args[1].(string),
-					Secret:   args[2].(string),
-					Region:   args[3].(string),
-					Endpoint: args[4].(string),
-					UseSSL:   args[5].(bool),
-					URLStyle: args[6].(string),
-					Scope:    args[7].(string),
+				params := make(map[string]any)
+				for i := 3; i < 12; i++ {
+					if args[i] == nil {
+						continue
+					}
+					switch i {
+					case 3:
+						params["KEY_ID"] = args[i].(string)
+					case 4:
+						params["SECRET"] = args[i].(string)
+					case 5:
+						if args[i].(string) != "" {
+							params["REGION"] = args[i].(string)
+						}
+					case 6:
+						params["ENDPOINT"] = args[i].(string)
+					case 7:
+						params["USE_SSL"] = args[i].(bool)
+					case 8:
+						params["URL_STYLE"] = args[i].(string)
+					case 9:
+						if args[i].(bool) {
+							params["URL_COMPATIBILITY_MODE"] = true
+						}
+					case 10:
+						if args[i].(string) != "" {
+							params["KMS_KEY_ID"] = args[i].(string)
+						}
+					case 11:
+						if args[i].(string) != "" {
+							params["ACCOUNT_ID"] = args[i].(string)
+						}
+					}
+				}
+				return storage.SecretInfo{
+					Type:       args[0].(string),
+					Name:       args[1].(string),
+					Scope:      args[2].(string),
+					Parameters: params,
 				}, nil
 			},
 			ConvertOutput: func(out *types.OperationResult) (any, error) {
@@ -307,6 +312,10 @@ func (s *Source) Attach(ctx context.Context, pool *db.Pool) error {
 				runtime.DuckDBTypeInfoByNameMust("VARCHAR"),
 				runtime.DuckDBTypeInfoByNameMust("VARCHAR"),
 				runtime.DuckDBTypeInfoByNameMust("VARCHAR"),
+				runtime.DuckDBTypeInfoByNameMust("VARCHAR"),
+				runtime.DuckDBTypeInfoByNameMust("VARCHAR"),
+				runtime.DuckDBTypeInfoByNameMust("VARCHAR"),
+				runtime.DuckDBTypeInfoByNameMust("BOOLEAN"),
 				runtime.DuckDBTypeInfoByNameMust("VARCHAR"),
 				runtime.DuckDBTypeInfoByNameMust("BOOLEAN"),
 				runtime.DuckDBTypeInfoByNameMust("VARCHAR"),
@@ -320,9 +329,9 @@ func (s *Source) Attach(ctx context.Context, pool *db.Pool) error {
 
 	err = pool.RegisterScalarFunction(ctx,
 		&db.ScalarFunctionWithArgs[string, *types.OperationResult]{
-			Name: "core_cluster_unregister_s3",
+			Name: "core_cluster_unregister_object_storage",
 			Execute: func(ctx context.Context, name string) (*types.OperationResult, error) {
-				err := s.UnregisterS3(ctx, name)
+				err := s.UnregisterObjectStorage(ctx, name)
 				if err != nil {
 					return types.ErrResult(err), nil
 				}
@@ -497,13 +506,13 @@ func (s *Source) DataSourceStatus(ctx context.Context, name string) ([]DataSourc
 	return ss, nil
 }
 
-func (s *Source) RegisterS3(ctx context.Context, info storage.S3Info) error {
+func (s *Source) RegisterObjectStorage(ctx context.Context, info storage.SecretInfo) error {
 	var buf bytes.Buffer
 	err := json.NewEncoder(&buf).Encode(info)
 	if err != nil {
 		return err
 	}
-	res, err := s.c.Post(s.config.ManagementNode+"/s3/register", "application/json", &buf)
+	res, err := s.c.Post(s.config.ManagementNode+"/storages", "application/json", &buf)
 	if err != nil {
 		return err
 	}
@@ -514,13 +523,17 @@ func (s *Source) RegisterS3(ctx context.Context, info storage.S3Info) error {
 		if b, err := io.ReadAll(res.Body); err == nil && len(b) > 0 {
 			errMsg = string(b)
 		}
-		return fmt.Errorf("register s3: %s", errMsg)
+		return fmt.Errorf("register storage: %s", errMsg)
 	}
 	return nil
 }
 
-func (s *Source) UnregisterS3(ctx context.Context, name string) error {
-	res, err := s.c.Get(s.config.ManagementNode + "/s3/unregister/" + name)
+func (s *Source) UnregisterObjectStorage(ctx context.Context, name string) error {
+	req, err := http.NewRequest(http.MethodDelete, s.config.ManagementNode+"/storages/"+name, nil)
+	if err != nil {
+		return err
+	}
+	res, err := s.c.Do(req)
 	if err != nil {
 		return err
 	}
@@ -531,12 +544,12 @@ func (s *Source) UnregisterS3(ctx context.Context, name string) error {
 		if b, err := io.ReadAll(res.Body); err == nil && len(b) > 0 {
 			errMsg = string(b)
 		}
-		return fmt.Errorf("unregister s3: %s", errMsg)
+		return fmt.Errorf("unregister object storage: %s", errMsg)
 	}
 	return nil
 }
 
-func (s *Source) RegisteredS3(ctx context.Context) ([]StorageInfo, error) {
+func (s *Source) RegisteredObjectStorages(ctx context.Context) ([]StorageInfo, error) {
 	res, err := s.c.Get(s.config.ManagementNode + "/storages")
 	if err != nil {
 		return nil, err

@@ -1,12 +1,21 @@
 extend type Function {
+    """
+    Get the status of a data source.
+    """
     data_source_status(
         name: String!
     ): [cluster_data_source_status]
         @function(name: "core_cluster_data_source_status")
 
+    """
+    Registered cluster nodes.
+    """
     nodes: [cluster_nodes]
         @function(name: "core_cluster_nodes")
 
+    """
+    Get the status of registered object storages.
+    """
     storages: [registered_storages]
         @function(name: "core_cluster_registered_s3")
 }
@@ -28,48 +37,134 @@ extend type MutationFunction {
     ): OperationResult
         @function(name: "core_cluster_unload_data_source")
     
-    register_s3(
+     """
+    Register a new or change an existing S3 object storage with the provided credentials.
+    """
+    register_object_storage(
+        """
+        Type of the object storage.
+        """
+        type: String!
+        """
+        Name of the object storage.
+        """
         name: String!
+        """
+        Scope of the object storage. Define bucket name or bucket sub path
+        """
+        scope: String!
+        """
+        User or AWS access key ID.
+        """
         key: String!
+        """
+        User or AWS secret access key.
+        """
         secret: String!
-        region: String!
+        """
+        AWS region.
+        """
+        region: String = ""
+        """
+        Endpoint URL.
+        """
         endpoint: String!
-        use_ssl: Boolean!
+        """
+        Whether to use HTTPS or HTTP
+        """
+        use_ssl: Boolean! = True
+        """
+        S3 URL style (path or vhost).
+        """
         url_style: String!
-        scope: String! 
+        """
+        URL compatibility mode
+        """
+        url_compatibility: Boolean = false
+        """
+        AWS KMS (Key Management Service) key for Server Side Encryption S3
+        """
+        kms_key_id: String = ""
+        """
+        Cloudflare R2 account ID.
+        """
+        account_id: String = ""
     ): OperationResult
-        @function(name: "core_cluster_register_s3")
+        @function(name: "core_cluster_register_object_storage")
 
-    unregister_s3(
+    unregister_object_storage(
         name: String!
     ): OperationResult
-        @function(name: "core_cluster_unregister_s3")
+        @function(name: "core_cluster_unregister_object_storage")
 }
 
-
-type registered_storages @view(name: "core_cluster_registered_s3") {
+"""
+Registered object storages view.
+"""
+type registered_storages @view(name: "core_cluster_registered_object_storages") {
+    """
+    Node name
+    """
     node: String! @pk
+    """
+    Name of the S3 object storage.
+    """
     name: String! @pk
+    """
+    Type of the S3 object storage.
+    """
     type: String!
-    key: String
-    region: String
-    endpoint: String
-    use_ssl: Boolean
-    url_style: String
+    """
+    Scope of the S3 bucket. Define bucket name or bucket sub path
+    """
     scope: [String]
+    """
+    Parameters for object storage
+    """
+    Parameters: String
 }
 
+"""
+Cluster nodes view.
+"""
 type cluster_nodes @view(name: "core_cluster_nodes") {
+    """
+    Node name
+    """
     name: String! @pk
+    """
+    Hugr version
+    """
     version: String!
+    """
+    Error message, if any
+    """
     error: String!
+    """
+    Last seen timestamp
+    """
     last_seen: Timestamp!
+    """
+    Node URL
+    """
     url: String!
+    """
+    Node readiness status
+    """
     ready: Boolean!
 }
 
 type cluster_data_source_status {
+    """
+    Node name
+    """
     node: String!
+    """
+    Data source status
+    """
     status: String!
+    """
+    Error message, if any
+    """
     error: String!
 }

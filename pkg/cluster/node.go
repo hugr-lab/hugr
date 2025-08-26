@@ -144,11 +144,47 @@ func (n *Node) DataSourceStatus(ctx context.Context, name string) (string, error
 	return n.c.DataSourceStatus(ctx, name)
 }
 
-func (n *Node) RegisterS3(ctx context.Context, info storage.S3Info) error {
+func (n *Node) RegisterObjectStorage(ctx context.Context, info storage.SecretInfo) error {
 	if !n.IsReady() {
 		return errors.New("node is not ready")
 	}
+	params := map[string]any{
+		"type":  info.Type,
+		"name":  info.Name,
+		"scope": info.Scope,
+	}
+	for _, k := range []string{"KEY_ID", "SECRET", "REGION", "ENDPOINT", "USE_SSL", "URL_STYLE", "URL_COMPATIBILITY_MODE", "KMS_KEY_ID", "ACCOUNT_ID"} {
+		val, ok := info.Parameters[k]
+		if !ok {
+			if k == "URL_COMPATIBILITY_MODE" {
+				params["url_compatibility"] = false
+				continue
+			}
+			if k == "KMS_KEY_ID" || k == "ACCOUNT_ID" {
+				params[k] = ""
+				continue
+			}
+			return errors.New("missing parameter: " + k)
+		}
+		switch k {
+		case "URL_COMPATIBILITY_MODE":
+			if val.(bool) {
+				params["url_compatibility"] = val
+			} else {
+				params["url_compatibility"] = false
+			}
+		case "USE_SSL":
+			vv, ok := val.(bool)
+			if !ok {
+				return errors.New("invalid parameter: " + k)
+			}
+			params["use_ssl"] = vv
+		default:
+			params[k] = val
+		}
+	}
 	res, err := n.c.Query(ctx, `mutation(
+		$type: String!,
 		$name: String!,
 		$key: String!,
 		$secret: String!,
@@ -156,12 +192,16 @@ func (n *Node) RegisterS3(ctx context.Context, info storage.S3Info) error {
 		$endpoint: String!,
 		$scope: String!,
 		$use_ssl: Boolean!,
-		$url_style: String!
+		$url_style: String!,
+		$url_compatibility: Boolean,
+		$kms_key_id: String,
+		$account_id: String
 	){
 		function {
 			core {
 				storage {
-					register_s3(
+					register_object_storage(
+						type: $type,
 						name: $name,
 						key: $key,
 						secret: $secret,
@@ -169,7 +209,10 @@ func (n *Node) RegisterS3(ctx context.Context, info storage.S3Info) error {
 						endpoint: $endpoint,
 						scope: $scope,
 						use_ssl: $use_ssl,
-						url_style: $url_style
+						url_style: $url_style,
+						url_compatibility: $url_compatibility,
+						kms_key_id: $kms_key_id,
+						account_id: $account_id
 					) {
 						success
 						message
@@ -177,16 +220,7 @@ func (n *Node) RegisterS3(ctx context.Context, info storage.S3Info) error {
 				}
 			}
 		}
-	}`, map[string]any{
-		"name":      info.Name,
-		"key":       info.KeyID,
-		"secret":    info.Secret,
-		"region":    info.Region,
-		"endpoint":  info.Endpoint,
-		"scope":     info.Scope,
-		"use_ssl":   info.UseSSL,
-		"url_style": info.URLStyle,
-	})
+	}`, params)
 	if err != nil {
 		return err
 	}
@@ -195,7 +229,7 @@ func (n *Node) RegisterS3(ctx context.Context, info storage.S3Info) error {
 		return res.Err()
 	}
 	var op types.OperationResult
-	err = res.ScanData("function.core.storage.register_s3", &op)
+	err = res.ScanData("function.core.storage.register_object_storage", &op)
 	if err != nil {
 		return err
 	}
@@ -206,7 +240,7 @@ func (n *Node) RegisterS3(ctx context.Context, info storage.S3Info) error {
 	return nil
 }
 
-func (n *Node) UnregisterS3(ctx context.Context, name string) error {
+func (n *Node) UnregisterObjectStorage(ctx context.Context, name string) error {
 	if !n.IsReady() {
 		return errors.New("node is not ready")
 	}
@@ -214,7 +248,7 @@ func (n *Node) UnregisterS3(ctx context.Context, name string) error {
 		function {
 			core {
 				storage {
-					unregister_s3(name: $name) {
+					unregister_object_storage(name: $name) {
 						success
 						message
 					}
@@ -232,7 +266,7 @@ func (n *Node) UnregisterS3(ctx context.Context, name string) error {
 	}
 	defer res.Close()
 	var op types.OperationResult
-	err = res.ScanData("function.core.storage.unregister_s3", &op)
+	err = res.ScanData("function.core.storage.unregister_object_storage", &op)
 	if err != nil {
 		return err
 	}
@@ -244,16 +278,11 @@ func (n *Node) UnregisterS3(ctx context.Context, name string) error {
 }
 
 type StorageInfo struct {
-	Node     string   `json:"node"`
-	Name     string   `json:"name"`
-	Type     string   `json:"type"`
-	KeyID    string   `json:"key"`
-	Secret   string   `json:"secret"`
-	Region   string   `json:"region"`
-	Endpoint string   `json:"endpoint"`
-	Scope    []string `json:"scope"`
-	UseSSL   bool     `json:"use_ssl"`
-	URLStyle string   `json:"url_style"`
+	Node       string   `json:"node"`
+	Name       string   `json:"name"`
+	Type       string   `json:"type"`
+	Scope      []string `json:"scope"`
+	Parameters string   `json:"parameters"`
 }
 
 func (n *Node) RegisteredStorages(ctx context.Context) ([]StorageInfo, error) {
@@ -263,15 +292,11 @@ func (n *Node) RegisteredStorages(ctx context.Context) ([]StorageInfo, error) {
 	res, err := n.c.Query(ctx, `query{
 		core {
 			storage {
-				registered_s3 {
+				registered_object_storages {
 					name
 					type
-					key
-					region
-					endpoint
 					scope
-					use_ssl
-					url_style
+					parameters
 				}
 			}
 		}
@@ -284,7 +309,7 @@ func (n *Node) RegisteredStorages(ctx context.Context) ([]StorageInfo, error) {
 		return nil, res.Err()
 	}
 	var ss []StorageInfo
-	err = res.ScanData("core.storage.registered_s3", &ss)
+	err = res.ScanData("core.storage.registered_object_storages", &ss)
 	if err != nil {
 		return nil, err
 	}

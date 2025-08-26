@@ -83,9 +83,8 @@ func (s *Service) Init() error {
 	s.router.HandleFunc("/data-source/{name}/status", s.dataSourceStatusHandler)
 	s.router.HandleFunc("/data-source/{name}/load", s.loadDataSourceHandler)
 	s.router.HandleFunc("/data-source/{name}/unload", s.unloadDataSourceHandler)
-	s.router.HandleFunc("/s3/register", s.registerS3Handler)
-	s.router.HandleFunc("/s3/unregister/{name}", s.unregisterS3Handler)
 	s.router.HandleFunc("/storages", s.registeredStoragesHandler)
+	s.router.HandleFunc("/storages/{name}", s.unregisterObjectStorageHandler)
 
 	return nil
 }
@@ -350,13 +349,13 @@ func (s *Service) unloadDataSourceHandler(w http.ResponseWriter, r *http.Request
 	w.Write([]byte(`{"success":"true", "message":"Data source unloaded successfully"}`))
 }
 
-func (s *Service) registerS3Handler(w http.ResponseWriter, r *http.Request) {
+func (s *Service) registerObjectStorageHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var ds storage.S3Info
+	var ds storage.SecretInfo
 	if err := json.NewDecoder(r.Body).Decode(&ds); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
@@ -376,12 +375,12 @@ func (s *Service) registerS3Handler(w http.ResponseWriter, r *http.Request) {
 		nn := nn
 		go func() {
 			defer wg.Done()
-			err := node.RegisterS3(ctx, ds)
+			err := node.RegisterObjectStorage(ctx, ds)
 			if err != nil {
-				log.Printf("ERR: node: %s: failed to register S3 %s: %v", nn, ds.Scope, err)
-				errCh <- fmt.Errorf("failed to register S3 %s on node %s: %w", ds.Scope, nn, err)
+				log.Printf("ERR: node: %s: failed to register Object storage %s: %v", nn, ds.Scope, err)
+				errCh <- fmt.Errorf("failed to register Object storage %s on node %s: %w", ds.Scope, nn, err)
 			}
-			log.Printf("INFO: node: %s: S3 storage %s registered successfully", nn, ds.Scope)
+			log.Printf("INFO: node: %s: Object storage %s registered successfully", nn, ds.Scope)
 		}()
 	}
 	var errMsg string
@@ -404,8 +403,8 @@ func (s *Service) registerS3Handler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"success":"true", "message":"Data source registered successfully"}`))
 }
 
-func (s *Service) unregisterS3Handler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
+func (s *Service) unregisterObjectStorageHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -428,12 +427,12 @@ func (s *Service) unregisterS3Handler(w http.ResponseWriter, r *http.Request) {
 		nn := nn
 		go func() {
 			defer wg.Done()
-			err := node.UnregisterS3(ctx, name)
+			err := node.UnregisterObjectStorage(ctx, name)
 			if err != nil {
-				log.Printf("ERR: node: %s:failed to unregister S3: %v", nn, name)
-				errCh <- fmt.Errorf("failed to unregister S3 %s on node %s: %w", name, nn, err)
+				log.Printf("ERR: node: %s:failed to unregister Object storage: %v", nn, name)
+				errCh <- fmt.Errorf("failed to unregister Object storage %s on node %s: %w", name, nn, err)
 			}
-			log.Printf("INFO: node: %s: S3 storage %s registered successfully", nn, name)
+			log.Printf("INFO: node: %s: Object storage %s registered successfully", nn, name)
 		}()
 	}
 	var errMsg string
@@ -457,6 +456,10 @@ func (s *Service) unregisterS3Handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) registeredStoragesHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		s.registerObjectStorageHandler(w, r)
+		return
+	}
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
