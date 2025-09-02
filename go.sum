@@ -93,8 +93,8 @@ github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aN
 github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/hashicorp/golang-lru/v2 v2.0.7 h1:a+bsQ5rvGLjzHuww6tVxozPZFVghXaHOwFs4luLUK2k=
 github.com/hashicorp/golang-lru/v2 v2.0.7/go.mod h1:QeFd9opnmA6QUJc5vARoKUSoFhyfM2/ZepoAG6RGpeM=
-github.com/hugr-lab/query-engine v0.1.26 h1:3MQaJwLkT7NNahPr5wi8ezqa0fGD5w+bOmH+EHCIAtA=
-github.com/hugr-lab/query-engine v0.1.26/go.mod h1:ZInEOaOYN8mOSLWmstsUkJ22t4X+SHAxQ/D8QI/4tJI=
+github.com/hugr-lab/query-engine v0.1.27 h1:N/t6PPHCDm+9hd/J8HpPnPLb31TduWr8RbPB9eGTK84=
+github.com/hugr-lab/query-engine v0.1.27/go.mod h1:ZInEOaOYN8mOSLWmstsUkJ22t4X+SHAxQ/D8QI/4tJI=
 github.com/itchyny/gojq v0.12.17 h1:8av8eGduDb5+rvEdaOO+zQUjA04MS0m3Ps8HiD+fceg=
 github.com/itchyny/gojq v0.12.17/go.mod h1:WBrEMkgAfAGO1LUcGOckBl5O726KPp+OlkKug0I/FEY=
 github.com/itchyny/timefmt-go v0.1.6 h1:ia3s54iciXDdzWzwaVKXZPbiXzxxnv1SPGFfM/myJ5Q=
