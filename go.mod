@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/coreos/go-oidc/v3 v3.16.0
-	github.com/hugr-lab/query-engine v0.1.29
+	github.com/hugr-lab/query-engine v0.1.30
 	github.com/joho/godotenv v1.5.1
 	github.com/marcboeker/go-duckdb/v2 v2.4.2
 	github.com/prometheus/client_golang v1.23.2
