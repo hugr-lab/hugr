@@ -21,9 +21,11 @@ type OIDCConfig struct {
 	TLSInsecure bool          `json:"tls_insecure" yaml:"tls_insecure"`
 	CookieName  string        `json:"cookie_name" yaml:"cookie_name"`
 
-	ScopeRolePrefix string                  `json:"scope_role_prefix" yaml:"scope_role_prefix"`
-	Claims          auth.UserAuthInfoConfig `json:"claims" yaml:"claims"`
+	ScopeRolePrefix string     `json:"scope_role_prefix" yaml:"scope_role_prefix"`
+	Claims          OIDCClaims `json:"claims" yaml:"claims"`
 }
+
+type OIDCClaims = auth.UserAuthInfoConfig
 
 type OIDCProvider struct {
 	c         OIDCConfig

@@ -31,6 +31,18 @@ jwt:
       user_id: "sub"
       user_name: "name"
 
+oidc:
+  issuer: "https://your-oidc-provider.com"
+  client_id: "your_client_id_here"
+  timeout: "5s"
+  tls_insecure: false
+  cookie_name: "your_oidc_cookie_name_here"
+  scope_role_prefix: "hugr:"
+  claims:
+    role: "x-hugr-role"
+    user_id: "sub"
+    user_name: "name"
+
 redirect_login_paths:
   - "/login"
   - "/auth"

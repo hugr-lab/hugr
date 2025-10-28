@@ -13,9 +13,10 @@ import (
 )
 
 type Config struct {
-	ManagementApiKeys bool   `json:"managed_api_keys"`
-	AllowedAnonymous  bool   `json:"allowed_anonymous"`
-	AnonymousRole     string `json:"anonymous_role"`
+	ManagementApiKeys bool       `json:"managed_api_keys"`
+	AllowedAnonymous  bool       `json:"allowed_anonymous"`
+	AnonymousRole     string     `json:"anonymous_role"`
+	OIDC              OIDCConfig `json:"oidc"`
 
 	// API Key with default admin role should be provided in the header x-hugr-secret-key
 	SecretKey string `json:"-"`
@@ -44,11 +45,7 @@ func (c *Config) Configure(ctx context.Context) (*auth.Config, error) {
 		}
 
 		if pc.OIDC.Issuer != "" {
-			oidc, err := NewOIDCProvider(ctx, pc.OIDC)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create OIDC provider: %w", err)
-			}
-			config.Providers = append(config.Providers, oidc)
+			c.OIDC = pc.OIDC
 		}
 
 		if pc.Anonymous.Allowed {
@@ -76,6 +73,14 @@ func (c *Config) Configure(ctx context.Context) (*auth.Config, error) {
 				},
 			}),
 		)
+	}
+
+	if c.OIDC.Issuer != "" {
+		oidc, err := NewOIDCProvider(ctx, c.OIDC)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create OIDC provider: %w", err)
+		}
+		config.Providers = append(config.Providers, oidc)
 	}
 
 	if c.AllowedAnonymous {

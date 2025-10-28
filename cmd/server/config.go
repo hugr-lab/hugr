@@ -112,6 +112,19 @@ func loadConfig() Config {
 			AnonymousRole:     viper.GetString("ANONYMOUS_ROLE"),
 			SecretKey:         viper.GetString("SECRET_KEY"),
 			ConfigFile:        viper.GetString("AUTH_CONFIG_FILE"),
+			OIDC: auth.OIDCConfig{
+				Issuer:          viper.GetString("OIDC_ISSUER"),
+				ClientID:        viper.GetString("OIDC_CLIENT_ID"),
+				Timeout:         viper.GetDuration("OIDC_TIMEOUT"),
+				TLSInsecure:     viper.GetBool("OIDC_TLS_INSECURE"),
+				CookieName:      viper.GetString("OIDC_COOKIE_NAME"),
+				ScopeRolePrefix: viper.GetString("OIDC_SCOPE_ROLE_PREFIX"),
+				Claims: auth.OIDCClaims{
+					Role:     viper.GetString("OIDC_USERNAME_CLAIM"),
+					UserId:   viper.GetString("OIDC_USERID_CLAIM"),
+					UserName: viper.GetString("OIDC_ROLE_CLAIM"),
+				},
+			},
 		},
 		Cache: cache.Config{
 			TTL: types.Interval(viper.GetDuration("CACHE_TTL")),
