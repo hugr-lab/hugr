@@ -120,9 +120,9 @@ func loadConfig() Config {
 				CookieName:      viper.GetString("OIDC_COOKIE_NAME"),
 				ScopeRolePrefix: viper.GetString("OIDC_SCOPE_ROLE_PREFIX"),
 				Claims: auth.OIDCClaims{
-					Role:     viper.GetString("OIDC_USERNAME_CLAIM"),
+					UserName: viper.GetString("OIDC_USERNAME_CLAIM"),
 					UserId:   viper.GetString("OIDC_USERID_CLAIM"),
-					UserName: viper.GetString("OIDC_ROLE_CLAIM"),
+					Role:     viper.GetString("OIDC_ROLE_CLAIM"),
 				},
 			},
 		},
