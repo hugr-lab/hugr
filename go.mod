@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/coreos/go-oidc/v3 v3.16.0
-	github.com/hugr-lab/query-engine v0.1.33
+	github.com/hugr-lab/query-engine v0.1.35
 	github.com/joho/godotenv v1.5.1
 	github.com/marcboeker/go-duckdb/v2 v2.4.3
 	github.com/prometheus/client_golang v1.23.2
@@ -25,7 +25,7 @@ require (
 	github.com/woodsbury/decimal128 v1.4.0 // indirect
 	go.mongodb.org/mongo-driver v1.17.6 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
-	golang.org/x/telemetry v0.0.0-20251022145735-5be28d707443 // indirect
+	golang.org/x/telemetry v0.0.0-20251028164327-d7a2859f34e8 // indirect
 )
 
 require (
@@ -73,7 +73,7 @@ require (
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.67.1 // indirect
+	github.com/prometheus/common v0.67.2 // indirect
 	github.com/prometheus/procfs v0.19.1 // indirect
 	github.com/redis/go-redis/v9 v9.16.0 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
