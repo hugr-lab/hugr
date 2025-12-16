@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/duckdb/duckdb-go/v2"
 	"github.com/hugr-lab/hugr/pkg/auth"
 	"github.com/hugr-lab/hugr/pkg/cluster"
 	"github.com/hugr-lab/hugr/pkg/cors"
@@ -18,7 +19,6 @@ import (
 	"github.com/hugr-lab/hugr/pkg/service"
 	hugr "github.com/hugr-lab/query-engine"
 	coredb "github.com/hugr-lab/query-engine/pkg/data-sources/sources/runtime/core-db"
-	"github.com/marcboeker/go-duckdb/v2"
 )
 
 var (
