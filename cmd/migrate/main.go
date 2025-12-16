@@ -10,12 +10,12 @@ import (
 	"slices"
 	"strings"
 
+	_ "github.com/duckdb/duckdb-go/v2"
 	"github.com/hugr-lab/query-engine/pkg/data-sources/sources"
 	coredb "github.com/hugr-lab/query-engine/pkg/data-sources/sources/runtime/core-db"
 	"github.com/hugr-lab/query-engine/pkg/db"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	_ "github.com/marcboeker/go-duckdb/v2"
 )
 
 var (
