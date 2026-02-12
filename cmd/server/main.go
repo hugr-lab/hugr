@@ -197,6 +197,9 @@ func installDuckDBExtension() error {
 		INSTALL parquet; LOAD parquet;
 		INSTALL mysql; LOAD mysql;
 		INSTALL vss; LOAD vss;
+		INSTALL azure; LOAD azure;
+		INSTALL mssql FROM community; LOAD mssql;
+		INSTALL airport FROM community; LOAD airport;
 	`)
 	if err != nil {
 		return err
