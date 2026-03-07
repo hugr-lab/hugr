@@ -6,8 +6,9 @@ import (
 
 	"github.com/duckdb/duckdb-go/v2"
 	hugr "github.com/hugr-lab/query-engine"
-	cs "github.com/hugr-lab/query-engine/pkg/catalogs/sources"
-	"github.com/hugr-lab/query-engine/pkg/data-sources/sources"
+	"github.com/hugr-lab/query-engine/pkg/catalog/compiler"
+	"github.com/hugr-lab/query-engine/pkg/catalog/sources"
+	rtsources "github.com/hugr-lab/query-engine/pkg/data-sources/sources"
 	"github.com/hugr-lab/query-engine/pkg/data-sources/sources/runtime"
 	"github.com/hugr-lab/query-engine/pkg/db"
 	"github.com/hugr-lab/query-engine/pkg/engines"
@@ -23,11 +24,12 @@ import (
 var schema string
 
 type NodeInfo struct {
-	Version        string    `json:"version"`
-	BuildDate      string    `json:"build_date"`
-	InCluster      bool      `json:"cluster_mode"`
-	ManagementNode string    `json:"management_node"`
-	Engine         hugr.Info `json:"engine"`
+	Version   string    `json:"version"`
+	BuildDate string    `json:"build_date"`
+	InCluster bool      `json:"cluster_mode"`
+	NodeRole  string    `json:"node_role"`
+	NodeName  string    `json:"node_name"`
+	Engine    hugr.Info `json:"engine"`
 }
 
 func (v *NodeInfo) toDuckdb() (map[string]any, error) {
@@ -44,7 +46,7 @@ func (v *NodeInfo) toDuckdb() (map[string]any, error) {
 	return info, nil
 }
 
-var _ (sources.RuntimeSource) = (*Source)(nil)
+var _ (rtsources.RuntimeSource) = (*Source)(nil)
 
 type Source struct {
 	info NodeInfo
@@ -112,15 +114,25 @@ func (s *Source) Attach(ctx context.Context, pool *db.Pool) error {
 	return nil
 }
 
-func (*Source) Catalog(ctx context.Context) cs.Source {
-	return cs.NewStringSource("version/schema.graphql", schema)
+func (s *Source) Catalog(ctx context.Context) (sources.Catalog, error) {
+	e := engines.NewDuckDB()
+	opts := compiler.Options{
+		Name:         s.Name(),
+		Prefix:       "core_version",
+		ReadOnly:     s.IsReadonly(),
+		AsModule:     s.AsModule(),
+		EngineType:   string(e.Type()),
+		Capabilities: e.Capabilities(),
+	}
+	return sources.NewStringSource(s.Name(), e, opts, schema)
 }
 
 var duckdbNodeInfoType = runtime.DuckDBStructTypeFromSchemaMust(map[string]any{
-	"version":         duckdb.TYPE_VARCHAR,
-	"build_date":      duckdb.TYPE_VARCHAR,
-	"management_node": duckdb.TYPE_VARCHAR,
-	"cluster_mode":    duckdb.TYPE_BOOLEAN,
+	"version":      duckdb.TYPE_VARCHAR,
+	"build_date":   duckdb.TYPE_VARCHAR,
+	"node_role":    duckdb.TYPE_VARCHAR,
+	"node_name":    duckdb.TYPE_VARCHAR,
+	"cluster_mode": duckdb.TYPE_BOOLEAN,
 	"engine": map[string]any{
 		"admin_ui":             duckdb.TYPE_BOOLEAN,
 		"debug":                duckdb.TYPE_BOOLEAN,

@@ -5,7 +5,8 @@ extend type Function {
 
 type NodeInfo {
   cluster_mode: Boolean!
-  management_node: String!
+  node_role: String!
+  node_name: String!
   version: String!
   build_date: String!
   config: NodeConfig! @field_source(field: "engine")

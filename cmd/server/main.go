@@ -9,11 +9,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	"github.com/duckdb/duckdb-go/v2"
 	"github.com/hugr-lab/hugr/pkg/auth"
-	"github.com/hugr-lab/hugr/pkg/cluster"
 	"github.com/hugr-lab/hugr/pkg/cors"
 	"github.com/hugr-lab/hugr/pkg/info"
 	"github.com/hugr-lab/hugr/pkg/service"
@@ -39,97 +39,91 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer stop()
 
-	isClusterMode := config.Cluster.ManagementUrl != ""
-	var hugrConfig hugr.Config
-	if !isClusterMode {
-		authConfig, err := config.Auth.Configure(ctx)
-		if err != nil {
-			log.Println("Auth configuration error:", err)
+	// Validate cluster configuration
+	if config.Cluster.Enabled {
+		if config.Cluster.Role != "management" && config.Cluster.Role != "worker" {
+			log.Printf("Invalid CLUSTER_ROLE=%q: must be 'management' or 'worker'\n", config.Cluster.Role)
 			os.Exit(1)
 		}
-		hugrConfig = hugr.Config{
-			AdminUI:            config.EnableAdminUI,
-			AdminUIFetchPath:   config.AdminUIFetchPath,
-			Debug:              config.DebugMode,
-			AllowParallel:      config.AllowParallel,
-			MaxParallelQueries: config.MaxParallelQueries,
-			MaxDepth:           config.MaxDepthInTypes,
-			DB:                 config.DB,
-			CoreDB:             coredb.New(config.CoreDB),
-			Auth:               authConfig,
-			Cache:              config.Cache,
-		}
-
-		if config.DB.Path != "" {
-			log.Println("DB path: ", config.DB.Path)
-		} else {
-			log.Println("DB path is not set, using in-memory database")
-		}
-
-		if config.CoreDB.Path != "" {
-			log.Println("Core DB path: ", config.CoreDB.Path)
-		}
-
-		if config.CoreDB.Path == "" && config.CoreDB.ReadOnly {
-			log.Println("Core DB path is not set, using in-memory database, it can't be read-only")
+		if !strings.HasPrefix(config.CoreDB.Path, "postgres") {
+			log.Println("Cluster mode requires PostgreSQL as CoreDB (CORE_DB_PATH must be a postgres:// DSN)")
 			os.Exit(1)
 		}
-
-		if config.CoreDB.Path == "" {
-			log.Println("Core DB path is not set, using in-memory database")
-		}
+		log.Printf("Cluster mode: role=%s, node=%s\n", config.Cluster.Role, config.Cluster.NodeName)
 	}
-	if isClusterMode {
-		var err error
-		hugrConfig, err = RegisterNode(ctx, config.Cluster, config)
-		if err != nil {
-			log.Println("Cluster registration error:", err)
-			os.Exit(1)
-		}
-		defer UnregisterNode(ctx, config.Cluster)
 
-		log.Printf("Cluster node %s registered at %s\n", config.Cluster.NodeName, config.Cluster.ManagementUrl)
-
+	authConfig, err := config.Auth.Configure(ctx)
+	if err != nil {
+		log.Println("Auth configuration error:", err)
+		os.Exit(1)
 	}
-	// Start the server
 
-	engine := hugr.New(hugrConfig)
+	hugrConfig := hugr.Config{
+		AdminUI:               config.EnableAdminUI,
+		AdminUIFetchPath:      config.AdminUIFetchPath,
+		Debug:                 config.DebugMode,
+		Profiling:             config.HttpProfiling,
+		AllowParallel:         config.AllowParallel,
+		MaxParallelQueries:    config.MaxParallelQueries,
+		MaxDepth:              config.MaxDepthInTypes,
+		SchemaCacheMaxEntries: config.SchemaCacheMaxEntries,
+		SchemaCacheTTL:        config.SchemaCacheTTL,
+		MCPEnabled:            config.MCPEnabled,
+		DB:                    config.DB,
+		CoreDB:                coredb.New(config.CoreDB),
+		Auth:                  authConfig,
+		Cache:                 config.Cache,
+		Embedder:              config.Embedder,
+		Cluster:               config.Cluster,
+	}
+
+	if config.DB.Path != "" {
+		log.Println("DB path: ", config.DB.Path)
+	} else {
+		log.Println("DB path is not set, using in-memory database")
+	}
+
+	if config.CoreDB.Path != "" {
+		log.Println("Core DB path: ", config.CoreDB.Path)
+	}
+
+	if config.CoreDB.Path == "" && config.CoreDB.ReadOnly {
+		log.Println("Core DB path is not set, using in-memory database, it can't be read-only")
+		os.Exit(1)
+	}
+
+	if config.CoreDB.Path == "" {
+		log.Println("Core DB path is not set, using in-memory database")
+	}
+
+	engine, err := hugr.New(hugrConfig)
+	if err != nil {
+		log.Println("Engine creation error:", err)
+		os.Exit(1)
+	}
 
 	if hugrConfig.Auth != nil {
 		auth.PrintSummary(hugrConfig.Auth)
 	}
 
-	err := engine.Init(ctx)
-	if err != nil {
-		log.Println("Initialization error:", err)
-		os.Exit(1)
-	}
-	defer engine.Close()
-
 	err = engine.AttachRuntimeSource(ctx, info.New(info.NodeInfo{
-		Version:        Version,
-		BuildDate:      BuildDate,
-		InCluster:      isClusterMode,
-		ManagementNode: config.Cluster.ManagementUrl,
-		Engine:         engine.Info(),
+		Version:   Version,
+		BuildDate: BuildDate,
+		InCluster: config.Cluster.Enabled,
+		NodeRole:  config.Cluster.Role,
+		NodeName:  config.Cluster.NodeName,
 	}))
 	if err != nil {
 		log.Println("Attach version source error:", err)
 		os.Exit(1)
 	}
-	if isClusterMode {
-		err = engine.AttachRuntimeSource(ctx, cluster.NewSource(cluster.SourceConfig{
-			ManagementNode: config.Cluster.ManagementUrl,
-			NodeName:       config.Cluster.NodeName,
-			NodeUrl:        config.Cluster.NodeUrl,
-			Secret:         config.Cluster.Secret,
-			Timeout:        config.Cluster.Timeout,
-		}))
-		if err != nil {
-			log.Println("Attach cluster source error:", err)
-			os.Exit(1)
-		}
+
+	err = engine.Init(ctx)
+	if err != nil {
+		log.Println("Initialization error:", err)
+		os.Exit(1)
 	}
+	defer engine.Close()
 
 	srv := &http.Server{
 		Addr:    config.Bind,

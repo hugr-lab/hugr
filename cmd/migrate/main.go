@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
 	_ "github.com/duckdb/duckdb-go/v2"
@@ -19,10 +20,11 @@ import (
 )
 
 var (
-	fCoreDB  = flag.String("core-db", "", "core database path")
-	fPath    = flag.String("path", "/migrations", "path to the migrations folder")
-	fVersion = flag.String("to-version", "", "version to migrate to")
-	fVerbose = flag.Bool("verbose", false, "enable verbose logging")
+	fCoreDB     = flag.String("core-db", "", "core database path")
+	fPath       = flag.String("path", "/migrations", "path to the migrations folder")
+	fVersion    = flag.String("to-version", "", "version to migrate to")
+	fVerbose    = flag.Bool("verbose", false, "enable verbose logging")
+	fVectorSize = flag.Int("vector-size", coredb.DefaultVectorSize, "dimension of embedding vectors for _schema_* tables")
 )
 
 func main() {
@@ -108,7 +110,7 @@ func main() {
 			return nil
 		}
 		mv := strings.TrimRight(parts[0], ".sql")
-		if version >= mv || *fVersion != "" && mv > *fVersion {
+		if compareVersions(version, mv) >= 0 || *fVersion != "" && compareVersions(mv, *fVersion) > 0 {
 			return nil
 		}
 		files = append(files, file{
@@ -123,6 +125,9 @@ func main() {
 	}
 
 	slices.SortFunc(files, func(a, b file) int {
+		if c := compareVersions(a.version, b.version); c != 0 {
+			return c
+		}
 		return strings.Compare(a.path, b.path)
 	})
 
@@ -135,7 +140,9 @@ func main() {
 			log.Println("failed to read migration:", err)
 			os.Exit(1)
 		}
-		parsedSQL, err := db.ParseSQLScriptTemplate(dbType, string(b))
+		parsedSQL, err := db.ParseSQLScriptTemplate(dbType, string(b), coredb.SchemaTemplateParams{
+			VectorSize: *fVectorSize,
+		})
 		if err != nil {
 			log.Println("failed to parse migration:", err)
 			os.Exit(1)
@@ -275,10 +282,35 @@ func initDB(dbType db.ScriptDBType, dbPath string) error {
 		return err
 	}
 	defer d.Close()
-	sql, err := db.ParseSQLScriptTemplate(dbType, coredb.InitSchema)
+	sql, err := db.ParseSQLScriptTemplate(dbType, coredb.InitSchema, coredb.SchemaTemplateParams{
+		VectorSize: *fVectorSize,
+	})
 	if err != nil {
 		return err
 	}
 	_, err = d.Exec(sql)
 	return err
+}
+
+// compareVersions compares two dot-separated version strings numerically.
+// Returns -1, 0, or 1 (a < b, a == b, a > b).
+func compareVersions(a, b string) int {
+	ap := strings.Split(a, ".")
+	bp := strings.Split(b, ".")
+	for i := range max(len(ap), len(bp)) {
+		var ai, bi int
+		if i < len(ap) {
+			ai, _ = strconv.Atoi(ap[i])
+		}
+		if i < len(bp) {
+			bi, _ = strconv.Atoi(bp[i])
+		}
+		if ai < bi {
+			return -1
+		}
+		if ai > bi {
+			return 1
+		}
+	}
+	return 0
 }

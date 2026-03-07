@@ -1,0 +1,2 @@
+# @target: worker-1
+{ pg_store { products(limit: 3, order_by: { id: ASC }) { id name price active } } }

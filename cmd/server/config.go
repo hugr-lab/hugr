@@ -5,7 +5,9 @@ import (
 
 	"github.com/hugr-lab/hugr/pkg/auth"
 	"github.com/hugr-lab/hugr/pkg/cors"
+	hugr "github.com/hugr-lab/query-engine"
 	"github.com/hugr-lab/query-engine/pkg/cache"
+	"github.com/hugr-lab/query-engine/pkg/cluster"
 	coredb "github.com/hugr-lab/query-engine/pkg/data-sources/sources/runtime/core-db"
 	"github.com/hugr-lab/query-engine/pkg/db"
 	"github.com/hugr-lab/query-engine/pkg/types"
@@ -16,15 +18,20 @@ import (
 type Config struct {
 	Bind        string
 	ServiceBind string
-	Cluster     ClusterConfig
+	Cluster     cluster.ClusterConfig
 
 	EnableAdminUI      bool
 	AdminUIFetchPath   string
 	DebugMode          bool
+	HttpProfiling      bool
 	AllowParallel      bool
 	MaxParallelQueries int
 
 	MaxDepthInTypes int
+
+	SchemaCacheMaxEntries int
+	SchemaCacheTTL        time.Duration
+	MCPEnabled            bool
 
 	DB db.Config
 
@@ -33,7 +40,8 @@ type Config struct {
 	Cors cors.Config
 	Auth auth.Config
 
-	Cache cache.Config
+	Cache    cache.Config
+	Embedder hugr.EmbedderConfig
 }
 
 func init() {
@@ -49,12 +57,19 @@ func initEnvs() {
 	viper.SetDefault("ALLOW_PARALLEL", true)
 	viper.SetDefault("MAX_PARALLEL_QUERIES", 0)
 	viper.SetDefault("MAX_DEPTH", 0)
+	viper.SetDefault("SCHEMA_CACHE_MAX_ENTRIES", 0)
+	viper.SetDefault("SCHEMA_CACHE_TTL", "0s")
+	viper.SetDefault("MCP_ENABLED", false)
 	viper.SetDefault("DB_PATH", "")
 	viper.SetDefault("DB_MAX_OPEN_CONNS", 0)
 	viper.SetDefault("DB_MAX_IDLE_CONNS", 0)
 	viper.SetDefault("ALLOWED_ANONYMOUS", true)
 	viper.SetDefault("ANONYMOUS_ROLE", "admin")
-	viper.SetDefault("CLUSTER_TIMEOUT", 5*time.Second)
+	viper.SetDefault("CLUSTER_ENABLED", false)
+	viper.SetDefault("CLUSTER_ROLE", "")
+	viper.SetDefault("CLUSTER_HEARTBEAT", 30*time.Second)
+	viper.SetDefault("CLUSTER_GHOST_TTL", 2*time.Minute)
+	viper.SetDefault("CLUSTER_POLL_INTERVAL", 30*time.Second)
 	viper.AutomaticEnv()
 }
 
@@ -62,19 +77,26 @@ func loadConfig() Config {
 	return Config{
 		Bind:        viper.GetString("BIND"),
 		ServiceBind: viper.GetString("SERVICE_BIND"),
-		Cluster: ClusterConfig{
-			Secret:        viper.GetString("CLUSTER_SECRET"),
-			ManagementUrl: viper.GetString("CLUSTER_MANAGEMENT_URL"),
-			NodeName:      viper.GetString("CLUSTER_NODE_NAME"),
-			NodeUrl:       viper.GetString("CLUSTER_NODE_URL"),
-			Timeout:       viper.GetDuration("CLUSTER_TIMEOUT"),
+		Cluster: cluster.ClusterConfig{
+			Enabled:      viper.GetBool("CLUSTER_ENABLED"),
+			Role:         viper.GetString("CLUSTER_ROLE"),
+			NodeName:     viper.GetString("CLUSTER_NODE_NAME"),
+			NodeURL:      viper.GetString("CLUSTER_NODE_URL"),
+			Secret:       viper.GetString("CLUSTER_SECRET"),
+			Heartbeat:    viper.GetDuration("CLUSTER_HEARTBEAT"),
+			GhostTTL:     viper.GetDuration("CLUSTER_GHOST_TTL"),
+			PollInterval: viper.GetDuration("CLUSTER_POLL_INTERVAL"),
 		},
 		EnableAdminUI:      viper.GetBool("ADMIN_UI"),
 		AdminUIFetchPath:   viper.GetString("ADMIN_UI_FETCH_PATH"),
-		DebugMode:          viper.GetBool("DEBUG"),
-		AllowParallel:      viper.GetBool("ALLOW_PARALLEL"),
-		MaxParallelQueries: viper.GetInt("MAX_PARALLEL_QUERIES"),
-		MaxDepthInTypes:    viper.GetInt("MAX_DEPTH"),
+		DebugMode:             viper.GetBool("DEBUG"),
+		HttpProfiling:         viper.GetBool("HTTP_PROFILING"),
+		AllowParallel:         viper.GetBool("ALLOW_PARALLEL"),
+		MaxParallelQueries:    viper.GetInt("MAX_PARALLEL_QUERIES"),
+		MaxDepthInTypes:       viper.GetInt("MAX_DEPTH"),
+		SchemaCacheMaxEntries: viper.GetInt("SCHEMA_CACHE_MAX_ENTRIES"),
+		SchemaCacheTTL:        viper.GetDuration("SCHEMA_CACHE_TTL"),
+		MCPEnabled:            viper.GetBool("MCP_ENABLED"),
 		DB: db.Config{
 			Path:         viper.GetString("DB_PATH"),
 			MaxOpenConns: viper.GetInt("DB_MAX_OPEN_CONNS"),
@@ -125,6 +147,10 @@ func loadConfig() Config {
 					Role:     viper.GetString("OIDC_ROLE_CLAIM"),
 				},
 			},
+		},
+		Embedder: hugr.EmbedderConfig{
+			URL:        viper.GetString("EMBEDDER_URL"),
+			VectorSize: viper.GetInt("EMBEDDER_VECTOR_SIZE"),
 		},
 		Cache: cache.Config{
 			TTL: types.Interval(viper.GetDuration("CACHE_TTL")),

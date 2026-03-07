@@ -1,0 +1,6 @@
+type products @table(name: "products") {
+  id: Int! @field(name: "id")
+  name: String! @field(name: "name")
+  price: Float! @field(name: "price")
+  active: Boolean @field(name: "active")
+}
