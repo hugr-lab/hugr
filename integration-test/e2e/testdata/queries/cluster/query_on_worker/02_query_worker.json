@@ -1,0 +1,26 @@
+{
+  "data": {
+    "pg_store": {
+      "products": [
+        {
+          "active": true,
+          "id": 1,
+          "name": "Widget A",
+          "price": 10.99
+        },
+        {
+          "active": true,
+          "id": 2,
+          "name": "Widget B",
+          "price": 24.5
+        },
+        {
+          "active": false,
+          "id": 3,
+          "name": "Widget C",
+          "price": 5.0
+        }
+      ]
+    }
+  }
+}

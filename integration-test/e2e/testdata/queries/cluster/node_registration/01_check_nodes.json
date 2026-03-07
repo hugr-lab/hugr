@@ -1,0 +1,20 @@
+{
+  "data": {
+    "core": {
+      "cluster": {
+        "nodes": [
+          {
+            "name": "mgmt",
+            "role": "management",
+            "url": "http://cluster-mgmt:15010/ipc"
+          },
+          {
+            "name": "worker-1",
+            "role": "worker",
+            "url": "http://cluster-worker-1:15011/ipc"
+          }
+        ]
+      }
+    }
+  }
+}

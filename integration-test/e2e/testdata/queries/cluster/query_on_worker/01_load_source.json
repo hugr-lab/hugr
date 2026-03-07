@@ -1,0 +1,14 @@
+{
+  "data": {
+    "function": {
+      "core": {
+        "cluster": {
+          "load_source": {
+            "message": "load_source: all workers ok",
+            "success": true
+          }
+        }
+      }
+    }
+  }
+}

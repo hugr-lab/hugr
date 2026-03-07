@@ -5,7 +5,7 @@ go 1.26
 require (
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/duckdb/duckdb-go/v2 v2.5.5
-	github.com/hugr-lab/query-engine v0.3.0
+	github.com/hugr-lab/query-engine v0.3.1
 	github.com/joho/godotenv v1.5.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/spf13/viper v1.21.0

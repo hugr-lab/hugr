@@ -1,2 +1,2 @@
 # @target: mgmt
-{ core { info { version cluster_mode node_role node_name } } }
+{ function { core { info { version cluster_mode node_role node_name } } } }

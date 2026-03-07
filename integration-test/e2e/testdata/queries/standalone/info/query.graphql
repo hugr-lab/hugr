@@ -1,1 +1,1 @@
-{ core { info { version cluster_mode } } }
+{ function { core { info { version cluster_mode node_role node_name } } } }
