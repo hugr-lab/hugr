@@ -1,0 +1,2 @@
+# @target: mgmt
+mutation { function { core { cluster { load_source(name: "pg_store") { success message } } } } }

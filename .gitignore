@@ -1,2 +1,12 @@
 .DS*
 .local
+*.exe
+*.test
+*.out
+.env
+.env.*
+
+specs/
+.specify/
+.claude/
+.vscode/

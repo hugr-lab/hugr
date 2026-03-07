@@ -1,0 +1,14 @@
+{
+  "data": {
+    "function": {
+      "core": {
+        "info": {
+          "cluster_mode": true,
+          "node_name": "mgmt",
+          "node_role": "management",
+          "version": "e2e-test"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,152 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: testdb
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    ports: ["5433:5432"]
+    volumes:
+      - ./testdata/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d testdb"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  core-postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: coredb_e2e
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    ports: ["5436:5432"]
+    volumes:
+      - ./testdata/core-postgres/init.sh:/docker-entrypoint-initdb.d/init-extra-dbs.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d coredb_e2e"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  # Standalone server (no cluster, DuckDB CoreDB)
+  hugr-standalone:
+    build:
+      context: ../../
+      dockerfile: integration-test/e2e/Dockerfile
+    ports: ["15000:15000"]
+    environment:
+      BIND: ":15000"
+      DB_PATH: ""
+      CORE_DB_PATH: ""
+      ADMIN_UI: "false"
+      ALLOWED_ANONYMOUS: "true"
+      ANONYMOUS_ROLE: "admin"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./testdata:/workspace
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:15000/query?query={__typename} || exit 1"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+
+  # Standalone server with PostgreSQL CoreDB
+  hugr-pg:
+    build:
+      context: ../../
+      dockerfile: integration-test/e2e/Dockerfile
+    ports: ["15001:15001"]
+    environment:
+      BIND: ":15001"
+      DB_PATH: ""
+      CORE_DB_PATH: "postgres://test:test@core-postgres:5432/coredb_e2e"
+      ADMIN_UI: "false"
+      ALLOWED_ANONYMOUS: "true"
+      ANONYMOUS_ROLE: "admin"
+    depends_on:
+      core-postgres:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./testdata:/workspace
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:15001/query?query={__typename} || exit 1"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+
+  # Cluster management node (PostgreSQL CoreDB required)
+  cluster-mgmt:
+    build:
+      context: ../../
+      dockerfile: integration-test/e2e/Dockerfile
+    ports: ["15010:15010"]
+    environment:
+      BIND: ":15010"
+      DB_PATH: ""
+      DB_ALLOWED_DIRECTORIES: "/workspace"
+      CORE_DB_PATH: "postgres://test:test@core-postgres:5432/coredb_cluster"
+      ADMIN_UI: "false"
+      ALLOWED_ANONYMOUS: "true"
+      ANONYMOUS_ROLE: "admin"
+      CLUSTER_ENABLED: "true"
+      CLUSTER_ROLE: "management"
+      CLUSTER_NODE_NAME: "mgmt"
+      CLUSTER_NODE_URL: "http://cluster-mgmt:15010/ipc"
+      CLUSTER_SECRET: "e2e-cluster-secret"
+      CLUSTER_HEARTBEAT: "5s"
+      CLUSTER_GHOST_TTL: "60s"
+      CLUSTER_POLL_INTERVAL: "5s"
+    depends_on:
+      core-postgres:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./testdata:/workspace
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:15010/query?query={__typename} || exit 1"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+
+  # Cluster worker node
+  cluster-worker-1:
+    build:
+      context: ../../
+      dockerfile: integration-test/e2e/Dockerfile
+    ports: ["15011:15011"]
+    environment:
+      BIND: ":15011"
+      DB_PATH: ""
+      DB_ALLOWED_DIRECTORIES: "/workspace"
+      CORE_DB_PATH: "postgres://test:test@core-postgres:5432/coredb_cluster"
+      ADMIN_UI: "false"
+      ALLOWED_ANONYMOUS: "true"
+      ANONYMOUS_ROLE: "admin"
+      CLUSTER_ENABLED: "true"
+      CLUSTER_ROLE: "worker"
+      CLUSTER_NODE_NAME: "worker-1"
+      CLUSTER_NODE_URL: "http://cluster-worker-1:15011/ipc"
+      CLUSTER_SECRET: "e2e-cluster-secret"
+      CLUSTER_HEARTBEAT: "5s"
+      CLUSTER_GHOST_TTL: "60s"
+      CLUSTER_POLL_INTERVAL: "5s"
+    depends_on:
+      core-postgres:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      cluster-mgmt:
+        condition: service_healthy
+    volumes:
+      - ./testdata:/workspace
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:15011/query?query={__typename} || exit 1"]
+      interval: 3s
+      timeout: 5s
+      retries: 40

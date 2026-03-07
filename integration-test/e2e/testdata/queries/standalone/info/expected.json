@@ -1,0 +1,14 @@
+{
+  "data": {
+    "function": {
+      "core": {
+        "info": {
+          "cluster_mode": false,
+          "node_name": "",
+          "node_role": "",
+          "version": "e2e-test"
+        }
+      }
+    }
+  }
+}

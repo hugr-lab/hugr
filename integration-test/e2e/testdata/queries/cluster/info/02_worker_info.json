@@ -1,0 +1,14 @@
+{
+  "data": {
+    "function": {
+      "core": {
+        "info": {
+          "cluster_mode": true,
+          "node_name": "worker-1",
+          "node_role": "worker",
+          "version": "e2e-test"
+        }
+      }
+    }
+  }
+}

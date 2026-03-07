@@ -4,12 +4,9 @@ GIT_VERSION ?= $(shell git describe --tags --always --dirty)
 LDFLAGS := "-X 'main.Version=$(GIT_VERSION)' -X 'main.BuildDate=$(BUILD_DATE)'"
 
 # Targets
-.PHONY: all management server migrate clean
+.PHONY: all server migrate clean test e2e
 
-all: management server migrate
-
-management:
-	CGO_ENABLED=1 go build -tags='duckdb_arrow' -ldflags=$(LDFLAGS) -o management cmd/management/*.go
+all: server migrate
 
 server:
 	CGO_ENABLED=1 go build -tags='duckdb_arrow' -ldflags=$(LDFLAGS) -o server cmd/server/*.go
@@ -17,5 +14,11 @@ server:
 migrate:
 	CGO_ENABLED=1 go build -tags='duckdb_arrow' -o migrate cmd/migrate/main.go
 
+test:
+	CGO_ENABLED=1 go test -tags='duckdb_arrow' ./integration-test/...
+
+e2e:
+	bash integration-test/e2e/run.sh
+
 clean:
-	rm -f management server migrate
+	rm -f server migrate
