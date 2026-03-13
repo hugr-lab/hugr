@@ -6,11 +6,11 @@ import (
 	"github.com/hugr-lab/hugr/pkg/auth"
 	"github.com/hugr-lab/hugr/pkg/cors"
 	hugr "github.com/hugr-lab/query-engine"
+	"github.com/hugr-lab/query-engine/pkg/catalog/types"
 	"github.com/hugr-lab/query-engine/pkg/cache"
 	"github.com/hugr-lab/query-engine/pkg/cluster"
 	coredb "github.com/hugr-lab/query-engine/pkg/data-sources/sources/runtime/core-db"
 	"github.com/hugr-lab/query-engine/pkg/db"
-	"github.com/hugr-lab/query-engine/pkg/types"
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
@@ -87,8 +87,8 @@ func loadConfig() Config {
 			GhostTTL:     viper.GetDuration("CLUSTER_GHOST_TTL"),
 			PollInterval: viper.GetDuration("CLUSTER_POLL_INTERVAL"),
 		},
-		EnableAdminUI:      viper.GetBool("ADMIN_UI"),
-		AdminUIFetchPath:   viper.GetString("ADMIN_UI_FETCH_PATH"),
+		EnableAdminUI:         viper.GetBool("ADMIN_UI"),
+		AdminUIFetchPath:      viper.GetString("ADMIN_UI_FETCH_PATH"),
 		DebugMode:             viper.GetBool("DEBUG"),
 		HttpProfiling:         viper.GetBool("HTTP_PROFILING"),
 		AllowParallel:         viper.GetBool("ALLOW_PARALLEL"),
