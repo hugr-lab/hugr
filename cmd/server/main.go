@@ -193,8 +193,8 @@ func installDuckDBExtension() error {
 		INSTALL vss; LOAD vss;
 		INSTALL azure; LOAD azure;
 		INSTALL mssql FROM community; LOAD mssql;
-		-- TODO: airport extension is not yet available for DuckDB 1.5.0
-		-- INSTALL airport FROM community; LOAD airport;
+		INSTALL airport FROM community; LOAD airport;
+		INSTALL ducklake; LOAD ducklake;
 	`)
 	if err != nil {
 		return err
