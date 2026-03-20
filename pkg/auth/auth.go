@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 
@@ -128,6 +129,24 @@ func LoadFile(configFile string) (c *ProvidersConfig, err error) {
 		return nil, fmt.Errorf("unsupported config file format: %s", configFile)
 	}
 	return &conf, err
+}
+
+// OIDCEnabled returns true if OIDC authentication is configured.
+func (c *Config) OIDCEnabled() bool {
+	return c.OIDC.Issuer != ""
+}
+
+// AuthConfigHandler returns an http.HandlerFunc that responds with
+// the public OIDC configuration (issuer and client_id).
+// Intended for public clients that need to perform OIDC login.
+func (c *Config) AuthConfigHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"issuer":    c.OIDC.Issuer,
+			"client_id": c.OIDC.ClientID,
+		})
+	}
 }
 
 func PrintSummary(c *auth.Config) {

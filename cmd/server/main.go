@@ -125,9 +125,19 @@ func main() {
 	}
 	defer engine.Close()
 
+	var handler http.Handler = engine
+
+	// Add /auth/config endpoint if OIDC is configured
+	if config.Auth.OIDCEnabled() {
+		mux := http.NewServeMux()
+		mux.HandleFunc("GET /auth/config", config.Auth.AuthConfigHandler())
+		mux.Handle("/", engine)
+		handler = mux
+	}
+
 	srv := &http.Server{
 		Addr:    config.Bind,
-		Handler: cors.Middleware(config.Cors)(engine),
+		Handler: cors.Middleware(config.Cors)(handler),
 	}
 
 	go func() {
