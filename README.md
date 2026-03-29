@@ -107,6 +107,50 @@ For local development, generate self-signed certificates with `make certs` and u
 
 **Note**: The sidecar service endpoint (health/metrics on `SERVICE_BIND`) always uses plain HTTP regardless of TLS configuration.
 
+### MCP OAuth (OIDC Authentication for MCP Clients)
+
+When MCP is enabled (`MCP_ENABLED=true`) and OIDC is configured, Hugr can act as a stateless OAuth 2.1 proxy so that MCP clients (Claude Desktop, Cursor, etc.) can authenticate via your OIDC provider.
+
+**Required environment variables** (in addition to existing OIDC config):
+
+- OIDC_CLIENT_SECRET - client secret for the OIDC authorization code exchange, default: "" (OAuth proxy disabled)
+- OIDC_SCOPES - space-separated scopes to request from the OIDC provider, default: "openid profile email"
+- OIDC_REDIRECT_URL - optional override for Hugr's OAuth callback URL (auto-derived from Host header if not set)
+- SECRET_KEY - required for encrypting OAuth state (must be set when using MCP OAuth)
+
+**How it works**: Hugr exposes `/.well-known/oauth-authorization-server` metadata pointing to its own `/oauth/authorize`, `/oauth/token`, and `/oauth/register` endpoints. MCP clients discover these endpoints, register dynamically, and complete an Authorization Code + PKCE flow. Hugr proxies the authentication to the external OIDC provider and passes the OIDC tokens back to the client. The existing auth middleware validates the tokens on subsequent MCP requests.
+
+**Setup with Cloudflare Tunnel** (for local development):
+```bash
+# Create a named tunnel (one-time)
+cloudflared tunnel create hugr-dev
+cloudflared tunnel route dns hugr-dev hugr-dev.yourdomain.com
+
+# Configure OIDC provider with redirect URI: https://hugr-dev.yourdomain.com/oauth/callback
+
+# Run Hugr + tunnel
+MCP_ENABLED=true \
+OIDC_ISSUER=https://your-provider.com/realms/your-realm \
+OIDC_CLIENT_ID=hugr-server \
+OIDC_CLIENT_SECRET=your-secret \
+SECRET_KEY=your-secret-key \
+ALLOWED_ANONYMOUS=false \
+./server &
+
+cloudflared tunnel run --url http://localhost:15000 hugr-dev
+```
+
+Then in Claude Desktop settings:
+```json
+{
+  "mcpServers": {
+    "hugr": {
+      "url": "https://hugr-dev.yourdomain.com/mcp"
+    }
+  }
+}
+```
+
 ### DuckDB engine settings
 
 - DB_HOME_DIRECTORY - path to the DuckDB home directory, default: "", example: "/data/.hugr". This very important to make persistence secrets (like S3 credentials) in container environments.

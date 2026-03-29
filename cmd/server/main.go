@@ -16,6 +16,7 @@ import (
 
 	"github.com/duckdb/duckdb-go/v2"
 	"github.com/hugr-lab/hugr/pkg/auth"
+	"github.com/hugr-lab/hugr/pkg/auth/oauth"
 	"github.com/hugr-lab/hugr/pkg/cors"
 	"github.com/hugr-lab/hugr/pkg/info"
 	"github.com/hugr-lab/hugr/pkg/service"
@@ -147,10 +148,29 @@ func main() {
 
 	var handler http.Handler = engine
 
-	// Add /auth/config endpoint if OIDC is configured
+	// Add /auth/config and OAuth proxy endpoints if OIDC is configured
 	if config.Auth.OIDCEnabled() {
 		mux := http.NewServeMux()
 		mux.HandleFunc("GET /auth/config", config.Auth.AuthConfigHandler())
+
+		// Mount OAuth proxy for MCP clients when MCP is enabled
+		if config.MCPEnabled && config.Auth.OIDC.ClientSecret != "" {
+			oauthProxy, err := oauth.NewProxy(ctx, oauth.Config{
+				Issuer:       config.Auth.OIDC.Issuer,
+				ClientID:     config.Auth.OIDC.ClientID,
+				ClientSecret: config.Auth.OIDC.ClientSecret,
+				Scopes:       config.Auth.OIDC.Scopes,
+				RedirectURL:  config.Auth.OIDC.RedirectURL,
+				SecretKey:    config.Auth.SecretKey,
+			})
+			if err != nil {
+				log.Println("OAuth proxy initialization error:", err)
+				os.Exit(1)
+			}
+			oauthProxy.RegisterHandlers(mux)
+			log.Println("MCP OAuth proxy enabled")
+		}
+
 		mux.Handle("/", engine)
 		handler = mux
 	}
