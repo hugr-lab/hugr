@@ -76,10 +76,6 @@ func NewOIDCProvider(ctx context.Context, c OIDCConfig) (*OIDCProvider, error) {
 	if c.Claims.UserName == "" {
 		c.Claims.UserName = "name"
 	}
-	if c.ScopeRolePrefix == "" {
-		c.ScopeRolePrefix = ""
-	}
-
 	return &OIDCProvider{
 		c:         c,
 		verifier:  verifier,

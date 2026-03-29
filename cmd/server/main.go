@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/duckdb/duckdb-go/v2"
@@ -38,20 +39,24 @@ func main() {
 	config := loadConfig()
 
 	// Validate TLS configuration
+	var tlsCfg *tls.Config
 	tlsEnabled := config.TLSCertFile != "" || config.TLSKeyFile != ""
 	if tlsEnabled {
 		if config.TLSCertFile == "" || config.TLSKeyFile == "" {
 			log.Println("Both TLS_CERT_FILE and TLS_KEY_FILE must be set when enabling TLS")
 			os.Exit(1)
 		}
-		_, err := tls.LoadX509KeyPair(config.TLSCertFile, config.TLSKeyFile)
+		cert, err := tls.LoadX509KeyPair(config.TLSCertFile, config.TLSKeyFile)
 		if err != nil {
 			log.Printf("TLS configuration error: %v\n", err)
 			os.Exit(1)
 		}
+		tlsCfg = &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		}
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
 	// Validate cluster configuration
@@ -151,8 +156,9 @@ func main() {
 	}
 
 	srv := &http.Server{
-		Addr:    config.Bind,
-		Handler: cors.Middleware(config.Cors)(handler),
+		Addr:      config.Bind,
+		Handler:   cors.Middleware(config.Cors)(handler),
+		TLSConfig: tlsCfg,
 	}
 
 	go func() {
@@ -166,7 +172,7 @@ func main() {
 		}
 		var err error
 		if tlsEnabled {
-			err = srv.ListenAndServeTLS(config.TLSCertFile, config.TLSKeyFile)
+			err = srv.ListenAndServeTLS("", "")
 		} else {
 			err = srv.ListenAndServe()
 		}
