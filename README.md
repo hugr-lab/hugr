@@ -90,6 +90,23 @@ CORE_DB_PATH="postgres://user:pass@db:5432/hugr" \
 - MAX_PARALLEL_QUERIES - limit to numbers of parallels queries executed, default: 0 (unlimited)
 - MAX_DEPTH - maximal depth of GraphQL types hierarchy, default: 7
 
+### TLS
+
+- TLS_CERT_FILE - path to PEM-encoded TLS certificate file, default: "" (disabled). When set together with TLS_KEY_FILE, the server serves HTTPS instead of HTTP.
+- TLS_KEY_FILE - path to PEM-encoded TLS private key file, default: "" (disabled). Both TLS_CERT_FILE and TLS_KEY_FILE must be set together.
+
+Example:
+```bash
+TLS_CERT_FILE=/etc/ssl/certs/hugr.crt \
+TLS_KEY_FILE=/etc/ssl/private/hugr.key \
+BIND=:443 \
+./server
+```
+
+For local development, generate self-signed certificates with `make certs` and use the TLS-enabled `.env` files in `.local/`.
+
+**Note**: The sidecar service endpoint (health/metrics on `SERVICE_BIND`) always uses plain HTTP regardless of TLS configuration.
+
 ### DuckDB engine settings
 
 - DB_HOME_DIRECTORY - path to the DuckDB home directory, default: "", example: "/data/.hugr". This very important to make persistence secrets (like S3 credentials) in container environments.

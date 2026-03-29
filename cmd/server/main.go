@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
 	"errors"
 	"flag"
@@ -35,6 +36,20 @@ func main() {
 		return
 	}
 	config := loadConfig()
+
+	// Validate TLS configuration
+	tlsEnabled := config.TLSCertFile != "" || config.TLSKeyFile != ""
+	if tlsEnabled {
+		if config.TLSCertFile == "" || config.TLSKeyFile == "" {
+			log.Println("Both TLS_CERT_FILE and TLS_KEY_FILE must be set when enabling TLS")
+			os.Exit(1)
+		}
+		_, err := tls.LoadX509KeyPair(config.TLSCertFile, config.TLSKeyFile)
+		if err != nil {
+			log.Printf("TLS configuration error: %v\n", err)
+			os.Exit(1)
+		}
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer stop()
@@ -141,11 +156,20 @@ func main() {
 	}
 
 	go func() {
-		log.Println("Starting server on ", config.Bind)
+		if tlsEnabled {
+			log.Printf("Starting server on %s (HTTPS)\n", config.Bind)
+		} else {
+			log.Printf("Starting server on %s (HTTP)\n", config.Bind)
+		}
 		if config.DebugMode {
 			log.Println("Debug mode on")
 		}
-		err := srv.ListenAndServe()
+		var err error
+		if tlsEnabled {
+			err = srv.ListenAndServeTLS(config.TLSCertFile, config.TLSKeyFile)
+		} else {
+			err = srv.ListenAndServe()
+		}
 		if errors.Is(err, http.ErrServerClosed) {
 			log.Println("Server stopped")
 			return

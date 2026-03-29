@@ -77,7 +77,7 @@ func NewOIDCProvider(ctx context.Context, c OIDCConfig) (*OIDCProvider, error) {
 		c.Claims.UserName = "name"
 	}
 	if c.ScopeRolePrefix == "" {
-		c.ScopeRolePrefix = "hugr:"
+		c.ScopeRolePrefix = ""
 	}
 
 	return &OIDCProvider{
@@ -108,8 +108,7 @@ func (p *OIDCProvider) Authenticate(r *http.Request) (*auth.AuthInfo, error) {
 	}
 
 	idToken, err := p.verifier.Verify(r.Context(), token)
-	var oidcErr *oidc.TokenExpiredError
-	if errors.As(err, &oidcErr) {
+	if _, ok := errors.AsType[*oidc.TokenExpiredError](err); ok {
 		return nil, auth.ErrTokenExpired
 	}
 	if err != nil {
@@ -121,25 +120,17 @@ func (p *OIDCProvider) Authenticate(r *http.Request) (*auth.AuthInfo, error) {
 		return nil, auth.ErrForbidden
 	}
 
-	role, _ := claims[p.c.Claims.Role].(string)
-	userId, _ := claims[p.c.Claims.UserId].(string)
-	userName, _ := claims[p.c.Claims.UserName].(string)
+	role := claimString(claims, p.c.Claims.Role, p.c.ScopeRolePrefix)
+	userId := claimString(claims, p.c.Claims.UserId, "")
+	userName := claimString(claims, p.c.Claims.UserName, "")
 
 	// check scopes if role is empty
 	if role == "" {
-		scopes, ok := claims["scopes"].([]any)
-		if ok {
-			for _, scope := range scopes {
-				if s, ok := scope.(string); ok {
-					if strings.HasPrefix(s, p.c.ScopeRolePrefix) {
-						if role == "" || strings.HasSuffix(s, role) {
-							role = strings.TrimPrefix(s, p.c.ScopeRolePrefix)
-							break
-						}
-					}
-				}
-			}
-		}
+		role = claimString(claims, "scopes", p.c.ScopeRolePrefix)
+	}
+
+	if role == "" {
+		return nil, auth.ErrForbidden
 	}
 
 	return &auth.AuthInfo{
@@ -150,4 +141,45 @@ func (p *OIDCProvider) Authenticate(r *http.Request) (*auth.AuthInfo, error) {
 		AuthProvider: p.Name(),
 		Token:        token,
 	}, nil
+}
+
+// claimString extracts a string value from a claim, if prefix is provided, it return only unprefixed value with it.
+// claims can be in different formats, for example:
+// "scopes": ["hugr:admin", "app:user"] -> for prefix "hugr:" it will return "admin", for prefix "app:" it will return "user", for prefix "" it will return "hugr:admin" (first match)
+// "roles": "hugr:user" -> for prefix "hugr:" it will return "user", for prefix "" it will return "hugr:user", for prefix "app:" it will return "" (no match)
+// "x-hugr-role": "admin"
+func claimString(claims jwt.MapClaims, key, prefix string) string {
+	if len(claims) == 0 {
+		return ""
+	}
+	v, ok := claims[key]
+	if !ok {
+		return ""
+	}
+	var s string
+	switch val := v.(type) {
+	case string:
+		if after, ok := strings.CutPrefix(val, prefix); ok {
+			s = after
+		}
+	case []any:
+		for _, item := range val {
+			str, ok := item.(string)
+			if !ok {
+				continue
+			}
+			if after, ok := strings.CutPrefix(str, prefix); ok {
+				s = after
+				break
+			}
+		}
+	case []string:
+		for _, str := range val {
+			if after, ok := strings.CutPrefix(str, prefix); ok {
+				s = after
+				break
+			}
+		}
+	}
+	return s
 }

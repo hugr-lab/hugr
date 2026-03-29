@@ -42,6 +42,9 @@ type Config struct {
 
 	Cache    cache.Config
 	Embedder hugr.EmbedderConfig
+
+	TLSCertFile string
+	TLSKeyFile  string
 }
 
 func init() {
@@ -70,6 +73,8 @@ func initEnvs() {
 	viper.SetDefault("CLUSTER_HEARTBEAT", 30*time.Second)
 	viper.SetDefault("CLUSTER_GHOST_TTL", 2*time.Minute)
 	viper.SetDefault("CLUSTER_POLL_INTERVAL", 30*time.Second)
+	viper.SetDefault("TLS_CERT_FILE", "")
+	viper.SetDefault("TLS_KEY_FILE", "")
 	viper.AutomaticEnv()
 }
 
@@ -152,6 +157,8 @@ func loadConfig() Config {
 			URL:        viper.GetString("EMBEDDER_URL"),
 			VectorSize: viper.GetInt("EMBEDDER_VECTOR_SIZE"),
 		},
+		TLSCertFile: viper.GetString("TLS_CERT_FILE"),
+		TLSKeyFile:  viper.GetString("TLS_KEY_FILE"),
 		Cache: cache.Config{
 			TTL: types.Interval(viper.GetDuration("CACHE_TTL")),
 			L1: cache.L1Config{

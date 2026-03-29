@@ -4,7 +4,7 @@ GIT_VERSION ?= $(shell git describe --tags --always --dirty)
 LDFLAGS := "-X 'main.Version=$(GIT_VERSION)' -X 'main.BuildDate=$(BUILD_DATE)'"
 
 # Targets
-.PHONY: all server migrate clean test e2e
+.PHONY: all server migrate clean test e2e certs
 
 all: server migrate
 
@@ -19,6 +19,13 @@ test:
 
 e2e:
 	bash integration-test/e2e/run.sh
+
+certs:
+	mkdir -p .local/certs
+	openssl req -x509 -newkey rsa:2048 -keyout .local/certs/server.key \
+		-out .local/certs/server.crt -days 365 -nodes \
+		-subj "/CN=localhost" \
+		-addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
 
 clean:
 	rm -f server migrate
