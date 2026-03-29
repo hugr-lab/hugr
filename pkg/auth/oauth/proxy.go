@@ -3,6 +3,7 @@ package oauth
 import (
 	"context"
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -52,7 +53,16 @@ func NewProxy(ctx context.Context, cfg Config) (*Proxy, error) {
 		return nil, fmt.Errorf("SECRET_KEY is required for MCP OAuth proxy")
 	}
 
-	provider, err := oidc.NewProvider(ctx, cfg.Issuer)
+	oidcCtx := ctx
+	if cfg.TLSInsecure {
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		hc := &http.Client{Transport: tr}
+		oidcCtx = oidc.ClientContext(ctx, hc)
+	}
+
+	provider, err := oidc.NewProvider(oidcCtx, cfg.Issuer)
 	if err != nil {
 		return nil, fmt.Errorf("oidc discovery: %w", err)
 	}
@@ -101,24 +111,24 @@ func (p *Proxy) callbackURL(r *http.Request) string {
 	if p.redirectURL != "" {
 		return p.redirectURL
 	}
-	scheme := "https"
-	if r.TLS == nil {
-		if fwd := r.Header.Get("X-Forwarded-Proto"); fwd != "" {
-			scheme = fwd
-		}
-	}
-	return scheme + "://" + r.Host + "/oauth/callback"
+	return requestScheme(r) + "://" + r.Host + "/oauth/callback"
 }
 
 // baseURL returns the base URL of the Hugr server derived from the request.
 func baseURL(r *http.Request) string {
-	scheme := "https"
-	if r.TLS == nil {
-		if fwd := r.Header.Get("X-Forwarded-Proto"); fwd != "" {
-			scheme = fwd
-		}
+	return requestScheme(r) + "://" + r.Host
+}
+
+// requestScheme detects the scheme from TLS state, X-Forwarded-Proto header,
+// or defaults to http for plain connections.
+func requestScheme(r *http.Request) string {
+	if r.TLS != nil {
+		return "https"
 	}
-	return scheme + "://" + r.Host
+	if fwd := r.Header.Get("X-Forwarded-Proto"); fwd != "" {
+		return fwd
+	}
+	return "http"
 }
 
 // handleMetadata serves the OAuth 2.1 Authorization Server Metadata.

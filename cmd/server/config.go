@@ -76,6 +76,8 @@ func initEnvs() {
 	viper.SetDefault("OIDC_CLIENT_SECRET", "")
 	viper.SetDefault("OIDC_SCOPES", "openid profile email")
 	viper.SetDefault("OIDC_REDIRECT_URL", "")
+	viper.SetDefault("MCP_OAUTH_CLIENT_ID", "")
+	viper.SetDefault("MCP_OAUTH_CLIENT_SECRET", "")
 	viper.SetDefault("TLS_CERT_FILE", "")
 	viper.SetDefault("TLS_KEY_FILE", "")
 	viper.AutomaticEnv()
