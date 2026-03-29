@@ -83,3 +83,10 @@ The heavy lifting (GraphQL schema generation, query execution, data source manag
 3. **Cluster Worker** — `CLUSTER_ENABLED=true CLUSTER_ROLE=worker`. CoreDB must be PostgreSQL (same as management). Reads compiled schema, syncs secrets, serves queries.
 
 Cluster mode always requires PostgreSQL as CoreDB. The server validates this at startup.
+
+## Active Technologies
+- Go 1.26+ + stdlib `net/http`, `crypto/tls` (no new external deps) (002-tls-support)
+- N/A (reads certificate files from filesystem) (002-tls-support)
+
+## Recent Changes
+- 002-tls-support: Added Go 1.26+ + stdlib `net/http`, `crypto/tls` (no new external deps)
