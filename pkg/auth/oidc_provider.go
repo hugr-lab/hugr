@@ -15,11 +15,14 @@ import (
 )
 
 type OIDCConfig struct {
-	Issuer      string        `json:"issuer" yaml:"issuer"`
-	ClientID    string        `json:"client_id" yaml:"client_id"`
-	Timeout     time.Duration `json:"timeout" yaml:"timeout"`
-	TLSInsecure bool          `json:"tls_insecure" yaml:"tls_insecure"`
-	CookieName  string        `json:"cookie_name" yaml:"cookie_name"`
+	Issuer       string        `json:"issuer" yaml:"issuer"`
+	ClientID     string        `json:"client_id" yaml:"client_id"`
+	ClientSecret string        `json:"-" yaml:"client_secret"`
+	Timeout      time.Duration `json:"timeout" yaml:"timeout"`
+	TLSInsecure  bool          `json:"tls_insecure" yaml:"tls_insecure"`
+	CookieName   string        `json:"cookie_name" yaml:"cookie_name"`
+	Scopes       string        `json:"scopes" yaml:"scopes"`
+	RedirectURL  string        `json:"redirect_url" yaml:"redirect_url"`
 
 	ScopeRolePrefix string     `json:"scope_role_prefix" yaml:"scope_role_prefix"`
 	Claims          OIDCClaims `json:"claims" yaml:"claims"`

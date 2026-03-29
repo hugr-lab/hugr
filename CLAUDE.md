@@ -87,6 +87,10 @@ Cluster mode always requires PostgreSQL as CoreDB. The server validates this at 
 ## Active Technologies
 - Go 1.26+ + stdlib `net/http`, `crypto/tls` (no new external deps) (002-tls-support)
 - N/A (reads certificate files from filesystem) (002-tls-support)
+- Go 1.26+ + `golang-jwt/jwt/v5` (direct), `coreos/go-oidc/v3` (direct), `golang.org/x/oauth2` (indirect→direct), `go-jose/go-jose/v4` (indirect) (003-mcp-oidc-auth)
+- In-memory (sync.Map with TTL) for auth codes, client registrations, refresh tokens. No DB changes. (003-mcp-oidc-auth)
+- Go 1.26+ + `coreos/go-oidc/v3` (direct), `golang.org/x/oauth2` (indirect→direct) (003-mcp-oidc-auth)
+- None. Fully stateless — transient data encrypted into request/response parameters with `SECRET_KEY`. (003-mcp-oidc-auth)
 
 ## Recent Changes
 - 002-tls-support: Added Go 1.26+ + stdlib `net/http`, `crypto/tls` (no new external deps)

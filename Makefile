@@ -4,7 +4,7 @@ GIT_VERSION ?= $(shell git describe --tags --always --dirty)
 LDFLAGS := "-X 'main.Version=$(GIT_VERSION)' -X 'main.BuildDate=$(BUILD_DATE)'"
 
 # Targets
-.PHONY: all server migrate clean test e2e certs
+.PHONY: all server migrate clean test e2e certs tunnel
 
 all: server migrate
 
@@ -26,6 +26,9 @@ certs:
 		-out .local/certs/server.crt -days 365 -nodes \
 		-subj "/CN=localhost" \
 		-addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
+
+tunnel:
+	cloudflared tunnel run --url http://localhost:15000 hugr-dev
 
 clean:
 	rm -f server migrate

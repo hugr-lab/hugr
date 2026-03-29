@@ -45,6 +45,9 @@ type Config struct {
 
 	TLSCertFile string
 	TLSKeyFile  string
+
+	MCPOAuthClientID     string
+	MCPOAuthClientSecret string
 }
 
 func init() {
@@ -73,6 +76,11 @@ func initEnvs() {
 	viper.SetDefault("CLUSTER_HEARTBEAT", 30*time.Second)
 	viper.SetDefault("CLUSTER_GHOST_TTL", 2*time.Minute)
 	viper.SetDefault("CLUSTER_POLL_INTERVAL", 30*time.Second)
+	viper.SetDefault("OIDC_CLIENT_SECRET", "")
+	viper.SetDefault("OIDC_SCOPES", "openid profile email")
+	viper.SetDefault("OIDC_REDIRECT_URL", "")
+	viper.SetDefault("MCP_OAUTH_CLIENT_ID", "")
+	viper.SetDefault("MCP_OAUTH_CLIENT_SECRET", "")
 	viper.SetDefault("TLS_CERT_FILE", "")
 	viper.SetDefault("TLS_KEY_FILE", "")
 	viper.AutomaticEnv()
@@ -145,7 +153,10 @@ func loadConfig() Config {
 				Timeout:         viper.GetDuration("OIDC_TIMEOUT"),
 				TLSInsecure:     viper.GetBool("OIDC_TLS_INSECURE"),
 				CookieName:      viper.GetString("OIDC_COOKIE_NAME"),
-				ScopeRolePrefix: viper.GetString("OIDC_SCOPE_ROLE_PREFIX"),
+				ClientSecret:    viper.GetString("OIDC_CLIENT_SECRET"),
+			Scopes:          viper.GetString("OIDC_SCOPES"),
+			RedirectURL:     viper.GetString("OIDC_REDIRECT_URL"),
+			ScopeRolePrefix: viper.GetString("OIDC_SCOPE_ROLE_PREFIX"),
 				Claims: auth.OIDCClaims{
 					UserName: viper.GetString("OIDC_USERNAME_CLAIM"),
 					UserId:   viper.GetString("OIDC_USERID_CLAIM"),
@@ -157,8 +168,10 @@ func loadConfig() Config {
 			URL:        viper.GetString("EMBEDDER_URL"),
 			VectorSize: viper.GetInt("EMBEDDER_VECTOR_SIZE"),
 		},
-		TLSCertFile: viper.GetString("TLS_CERT_FILE"),
-		TLSKeyFile:  viper.GetString("TLS_KEY_FILE"),
+		TLSCertFile:          viper.GetString("TLS_CERT_FILE"),
+		TLSKeyFile:           viper.GetString("TLS_KEY_FILE"),
+		MCPOAuthClientID:     viper.GetString("MCP_OAUTH_CLIENT_ID"),
+		MCPOAuthClientSecret: viper.GetString("MCP_OAUTH_CLIENT_SECRET"),
 		Cache: cache.Config{
 			TTL: types.Interval(viper.GetDuration("CACHE_TTL")),
 			L1: cache.L1Config{
