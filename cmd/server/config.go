@@ -45,6 +45,9 @@ type Config struct {
 
 	TLSCertFile string
 	TLSKeyFile  string
+
+	MCPOAuthClientID     string
+	MCPOAuthClientSecret string
 }
 
 func init() {
@@ -165,8 +168,10 @@ func loadConfig() Config {
 			URL:        viper.GetString("EMBEDDER_URL"),
 			VectorSize: viper.GetInt("EMBEDDER_VECTOR_SIZE"),
 		},
-		TLSCertFile: viper.GetString("TLS_CERT_FILE"),
-		TLSKeyFile:  viper.GetString("TLS_KEY_FILE"),
+		TLSCertFile:          viper.GetString("TLS_CERT_FILE"),
+		TLSKeyFile:           viper.GetString("TLS_KEY_FILE"),
+		MCPOAuthClientID:     viper.GetString("MCP_OAUTH_CLIENT_ID"),
+		MCPOAuthClientSecret: viper.GetString("MCP_OAUTH_CLIENT_SECRET"),
 		Cache: cache.Config{
 			TTL: types.Interval(viper.GetDuration("CACHE_TTL")),
 			L1: cache.L1Config{

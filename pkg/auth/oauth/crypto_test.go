@@ -62,7 +62,7 @@ func TestDecryptWrongKey(t *testing.T) {
 func TestStatePayloadTTL(t *testing.T) {
 	key := deriveKey("test-ttl")
 
-	s := &StatePayload{
+	s := StatePayload{
 		RedirectURI:   "http://localhost:1234/callback",
 		CodeChallenge: "abc123",
 		ClientID:      "test-client",
@@ -93,7 +93,7 @@ func TestStatePayloadTTL(t *testing.T) {
 func TestAuthCodePayloadTTL(t *testing.T) {
 	key := deriveKey("test-authcode")
 
-	a := &AuthCodePayload{
+	a := AuthCodePayload{
 		AccessToken:   "access-token-123",
 		IDToken:       "id-token-456",
 		RefreshToken:  "refresh-token-789",

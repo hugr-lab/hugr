@@ -18,7 +18,6 @@ import (
 	"github.com/hugr-lab/hugr/pkg/auth"
 	"github.com/hugr-lab/hugr/pkg/auth/oauth"
 	"github.com/hugr-lab/hugr/pkg/cors"
-	"github.com/spf13/viper"
 	"github.com/hugr-lab/hugr/pkg/info"
 	"github.com/hugr-lab/hugr/pkg/service"
 	hugr "github.com/hugr-lab/query-engine"
@@ -155,8 +154,8 @@ func main() {
 		mux.HandleFunc("GET /auth/config", config.Auth.AuthConfigHandler())
 
 		// Mount OAuth proxy for MCP clients when MCP is enabled
-		mcpClientID := viper.GetString("MCP_OAUTH_CLIENT_ID")
-		mcpClientSecret := viper.GetString("MCP_OAUTH_CLIENT_SECRET")
+		mcpClientID := config.MCPOAuthClientID
+		mcpClientSecret := config.MCPOAuthClientSecret
 		// Fall back to OIDC client credentials if MCP-specific ones are not set
 		if mcpClientID == "" {
 			mcpClientID = config.Auth.OIDC.ClientID

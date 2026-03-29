@@ -99,7 +99,7 @@ func decrypt(key []byte, encoded string, v any) error {
 }
 
 // encryptState encrypts a StatePayload, setting the timestamp to now.
-func encryptState(key []byte, s *StatePayload) (string, error) {
+func encryptState(key []byte, s StatePayload) (string, error) {
 	s.Timestamp = time.Now().Unix()
 	return encrypt(key, s)
 }
@@ -117,7 +117,7 @@ func decryptState(key []byte, encoded string, ttl time.Duration) (*StatePayload,
 }
 
 // encryptAuthCode encrypts an AuthCodePayload, setting the timestamp to now.
-func encryptAuthCode(key []byte, a *AuthCodePayload) (string, error) {
+func encryptAuthCode(key []byte, a AuthCodePayload) (string, error) {
 	a.Timestamp = time.Now().Unix()
 	return encrypt(key, a)
 }

@@ -155,7 +155,7 @@ func TestHandleToken_AuthorizationCode_Success(t *testing.T) {
 	challenge := base64.RawURLEncoding.EncodeToString(h[:])
 
 	// Create a valid encrypted auth code
-	authCode := &AuthCodePayload{
+	authCode := AuthCodePayload{
 		AccessToken:   "oidc-access-token",
 		IDToken:       "oidc-id-token",
 		RefreshToken:  "oidc-refresh-token",
@@ -208,7 +208,7 @@ func TestHandleToken_PKCEMismatch(t *testing.T) {
 	mux := http.NewServeMux()
 	p.RegisterHandlers(mux)
 
-	authCode := &AuthCodePayload{
+	authCode := AuthCodePayload{
 		AccessToken:   "token",
 		TokenType:     "Bearer",
 		CodeChallenge: "correct-challenge",
@@ -247,7 +247,7 @@ func TestHandleToken_ExpiredCode(t *testing.T) {
 	p.RegisterHandlers(mux)
 
 	// Manually create an expired auth code
-	authCode := &AuthCodePayload{
+	authCode := AuthCodePayload{
 		AccessToken:   "token",
 		TokenType:     "Bearer",
 		CodeChallenge: "challenge",
@@ -280,7 +280,7 @@ func TestHandleToken_ClientIDMismatch(t *testing.T) {
 	mux := http.NewServeMux()
 	p.RegisterHandlers(mux)
 
-	authCode := &AuthCodePayload{
+	authCode := AuthCodePayload{
 		AccessToken:   "token",
 		TokenType:     "Bearer",
 		CodeChallenge: "challenge",

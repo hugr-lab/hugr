@@ -42,6 +42,7 @@ type Config struct {
 type Proxy struct {
 	oauth2Config oauth2.Config
 	oidcProvider *oidc.Provider
+	httpClient   *http.Client // used for refresh token proxy
 	key          []byte
 	redirectURL  string // optional override
 	tokenURL     string // OIDC provider's token endpoint (for refresh proxy)
@@ -80,8 +81,18 @@ func NewProxy(ctx context.Context, cfg Config) (*Proxy, error) {
 		return nil, fmt.Errorf("oidc provider claims: %w", err)
 	}
 
+	hc := http.DefaultClient
+	if cfg.TLSInsecure {
+		hc = &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		}
+	}
+
 	p := &Proxy{
 		oidcProvider: provider,
+		httpClient:   hc,
 		key:          deriveKey(cfg.SecretKey),
 		redirectURL:  cfg.RedirectURL,
 		tokenURL:     providerClaims.TokenEndpoint,
@@ -125,8 +136,8 @@ func requestScheme(r *http.Request) string {
 	if r.TLS != nil {
 		return "https"
 	}
-	if fwd := r.Header.Get("X-Forwarded-Proto"); fwd != "" {
-		return fwd
+	if fwd := r.Header.Get("X-Forwarded-Proto"); fwd == "https" {
+		return "https"
 	}
 	return "http"
 }
@@ -178,7 +189,7 @@ func (p *Proxy) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payload := &StatePayload{
+	payload := StatePayload{
 		RedirectURI:   redirectURI,
 		CodeChallenge: codeChallenge,
 		ClientID:      clientID,
@@ -237,7 +248,7 @@ func (p *Proxy) handleCallback(w http.ResponseWriter, r *http.Request) {
 
 	idTokenRaw, _ := token.Extra("id_token").(string)
 
-	authCode := &AuthCodePayload{
+	authCode := AuthCodePayload{
 		AccessToken:   token.AccessToken,
 		IDToken:       idTokenRaw,
 		RefreshToken:  token.RefreshToken,
@@ -352,7 +363,7 @@ func (p *Proxy) handleTokenRefresh(w http.ResponseWriter, r *http.Request) {
 		"client_secret": {p.oauth2Config.ClientSecret},
 	}
 
-	resp, err := http.PostForm(p.tokenURL, data)
+	resp, err := p.httpClient.PostForm(p.tokenURL, data)
 	if err != nil {
 		log.Printf("oauth: refresh proxy error: %v", err)
 		oauthError(w, http.StatusBadGateway, "server_error", "failed to contact OIDC provider")
@@ -360,15 +371,16 @@ func (p *Proxy) handleTokenRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Cache-Control", "no-store")
-	w.WriteHeader(resp.StatusCode)
-
 	var body json.RawMessage
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		log.Printf("oauth: refresh response decode error: %v", err)
 		oauthError(w, http.StatusBadGateway, "server_error", "invalid response from OIDC provider")
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(resp.StatusCode)
 	json.NewEncoder(w).Encode(body)
 }
 
