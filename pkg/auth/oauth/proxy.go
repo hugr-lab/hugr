@@ -42,10 +42,11 @@ type Config struct {
 type Proxy struct {
 	oauth2Config oauth2.Config
 	oidcProvider *oidc.Provider
-	httpClient   *http.Client // used for refresh token proxy
-	key          []byte
-	redirectURL  string // optional override
-	tokenURL     string // OIDC provider's token endpoint (for refresh proxy)
+	httpClient    *http.Client // used for refresh/revoke proxy
+	key           []byte
+	redirectURL   string // optional override
+	tokenURL      string // OIDC provider's token endpoint (for refresh proxy)
+	revocationURL string // OIDC provider's revocation endpoint (for logout)
 }
 
 // NewProxy creates a new OAuth proxy by performing OIDC discovery.
@@ -73,9 +74,10 @@ func NewProxy(ctx context.Context, cfg Config) (*Proxy, error) {
 		scopes = strings.Fields(cfg.Scopes)
 	}
 
-	// Extract token endpoint from provider for refresh proxy
+	// Extract token and revocation endpoints from provider for proxy
 	var providerClaims struct {
-		TokenEndpoint string `json:"token_endpoint"`
+		TokenEndpoint      string `json:"token_endpoint"`
+		RevocationEndpoint string `json:"revocation_endpoint"`
 	}
 	if err := provider.Claims(&providerClaims); err != nil {
 		return nil, fmt.Errorf("oidc provider claims: %w", err)
@@ -91,11 +93,12 @@ func NewProxy(ctx context.Context, cfg Config) (*Proxy, error) {
 	}
 
 	p := &Proxy{
-		oidcProvider: provider,
-		httpClient:   hc,
-		key:          deriveKey(cfg.SecretKey),
-		redirectURL:  cfg.RedirectURL,
-		tokenURL:     providerClaims.TokenEndpoint,
+		oidcProvider:  provider,
+		httpClient:    hc,
+		key:           deriveKey(cfg.SecretKey),
+		redirectURL:   cfg.RedirectURL,
+		tokenURL:      providerClaims.TokenEndpoint,
+		revocationURL: providerClaims.RevocationEndpoint,
 		oauth2Config: oauth2.Config{
 			ClientID:     cfg.ClientID,
 			ClientSecret: cfg.ClientSecret,
@@ -113,6 +116,7 @@ func (p *Proxy) RegisterHandlers(mux *http.ServeMux) {
 	mux.HandleFunc("GET /oauth/authorize", p.handleAuthorize)
 	mux.HandleFunc("GET /oauth/callback", p.handleCallback)
 	mux.HandleFunc("POST /oauth/token", p.handleToken)
+	mux.HandleFunc("POST /oauth/revoke", p.handleRevoke)
 	mux.HandleFunc("POST /oauth/register", p.handleRegister)
 }
 
@@ -150,6 +154,7 @@ func (p *Proxy) handleMetadata(w http.ResponseWriter, r *http.Request) {
 		"authorization_endpoint":                base + "/oauth/authorize",
 		"token_endpoint":                        base + "/oauth/token",
 		"registration_endpoint":                 base + "/oauth/register",
+		"revocation_endpoint":                   base + "/oauth/revoke",
 		"response_types_supported":              []string{"code"},
 		"grant_types_supported":                 []string{"authorization_code", "refresh_token"},
 		"token_endpoint_auth_methods_supported": []string{"none"},
@@ -382,6 +387,54 @@ func (p *Proxy) handleTokenRefresh(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(resp.StatusCode)
 	json.NewEncoder(w).Encode(body)
+}
+
+// handleRevoke proxies a token revocation request (RFC 7009) to the OIDC provider.
+func (p *Proxy) handleRevoke(w http.ResponseWriter, r *http.Request) {
+	if p.revocationURL == "" {
+		oauthError(w, http.StatusBadRequest, "unsupported_operation", "OIDC provider does not support token revocation")
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		oauthError(w, http.StatusBadRequest, "invalid_request", "malformed request body")
+		return
+	}
+
+	token := r.FormValue("token")
+	if token == "" {
+		oauthError(w, http.StatusBadRequest, "invalid_request", "missing token parameter")
+		return
+	}
+
+	data := url.Values{
+		"token":         {token},
+		"client_id":     {p.oauth2Config.ClientID},
+		"client_secret": {p.oauth2Config.ClientSecret},
+	}
+	if tokenTypeHint := r.FormValue("token_type_hint"); tokenTypeHint != "" {
+		data.Set("token_type_hint", tokenTypeHint)
+	}
+
+	resp, err := p.httpClient.PostForm(p.revocationURL, data)
+	if err != nil {
+		log.Printf("oauth: revocation proxy error: %v", err)
+		oauthError(w, http.StatusBadGateway, "server_error", "failed to contact OIDC provider")
+		return
+	}
+	defer resp.Body.Close()
+
+	// RFC 7009: successful revocation returns 200 with empty body
+	if resp.StatusCode != http.StatusOK {
+		var body json.RawMessage
+		if err := json.NewDecoder(resp.Body).Decode(&body); err == nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(resp.StatusCode)
+			json.NewEncoder(w).Encode(body)
+			return
+		}
+	}
+	w.WriteHeader(resp.StatusCode)
 }
 
 // handleRegister implements stateless dynamic client registration (RFC 7591).

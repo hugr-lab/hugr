@@ -19,8 +19,9 @@ func testProxy(t *testing.T) *Proxy {
 	t.Helper()
 	key := deriveKey("test-secret-key-32-chars-minimum")
 	return &Proxy{
-		key:      key,
-		tokenURL: "http://oidc.example.com/token",
+		key:        key,
+		httpClient: http.DefaultClient,
+		tokenURL:   "http://oidc.example.com/token",
 		oauth2Config: oauth2.Config{
 			ClientID:     "hugr-client",
 			ClientSecret: "hugr-secret",
@@ -401,6 +402,75 @@ func TestHandleRegister_HTTPSRedirectURI(t *testing.T) {
 
 	if w.Code != http.StatusCreated {
 		t.Fatalf("expected 201 for HTTPS redirect, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestHandleRevoke_Success(t *testing.T) {
+	// Mock OIDC revocation endpoint
+	mockOIDC := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/revoke" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.FormValue("token") == "" {
+			t.Fatal("missing token")
+		}
+		if r.FormValue("client_id") != "hugr-client" {
+			t.Fatalf("unexpected client_id: %s", r.FormValue("client_id"))
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer mockOIDC.Close()
+
+	p := testProxy(t)
+	p.revocationURL = mockOIDC.URL + "/revoke"
+	mux := http.NewServeMux()
+	p.RegisterHandlers(mux)
+
+	form := url.Values{
+		"token":           {"some-access-token"},
+		"token_type_hint": {"access_token"},
+	}
+	req := httptest.NewRequest("POST", "https://hugr.example.com/oauth/revoke", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestHandleRevoke_NoRevocationEndpoint(t *testing.T) {
+	p := testProxy(t)
+	p.revocationURL = ""
+	mux := http.NewServeMux()
+	p.RegisterHandlers(mux)
+
+	form := url.Values{"token": {"some-token"}}
+	req := httptest.NewRequest("POST", "https://hugr.example.com/oauth/revoke", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 when no revocation endpoint, got %d", w.Code)
+	}
+}
+
+func TestHandleRevoke_MissingToken(t *testing.T) {
+	p := testProxy(t)
+	p.revocationURL = "http://oidc.example.com/revoke"
+	mux := http.NewServeMux()
+	p.RegisterHandlers(mux)
+
+	form := url.Values{}
+	req := httptest.NewRequest("POST", "https://hugr.example.com/oauth/revoke", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for missing token, got %d", w.Code)
 	}
 }
 
