@@ -5,7 +5,7 @@ go 1.26
 require (
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/duckdb/duckdb-go/v2 v2.10501.0
-	github.com/hugr-lab/query-engine v0.3.13
+	github.com/hugr-lab/query-engine v0.3.14
 	github.com/joho/godotenv v1.5.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/spf13/viper v1.21.0
@@ -27,8 +27,8 @@ require (
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hugr-lab/airport-go v0.2.1 // indirect
-	github.com/hugr-lab/query-engine/client v0.3.13 // indirect
-	github.com/hugr-lab/query-engine/types v0.3.13 // indirect
+	github.com/hugr-lab/query-engine/client v0.3.14 // indirect
+	github.com/hugr-lab/query-engine/types v0.3.14 // indirect
 	github.com/invopop/jsonschema v0.13.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
