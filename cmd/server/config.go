@@ -6,9 +6,10 @@ import (
 	"github.com/hugr-lab/hugr/pkg/auth"
 	"github.com/hugr-lab/hugr/pkg/cors"
 	hugr "github.com/hugr-lab/query-engine"
-	"github.com/hugr-lab/query-engine/pkg/catalog/types"
 	"github.com/hugr-lab/query-engine/pkg/cache"
+	"github.com/hugr-lab/query-engine/pkg/catalog/types"
 	"github.com/hugr-lab/query-engine/pkg/cluster"
+	"github.com/hugr-lab/query-engine/pkg/data-sources/sources"
 	coredb "github.com/hugr-lab/query-engine/pkg/data-sources/sources/runtime/core-db"
 	"github.com/hugr-lab/query-engine/pkg/db"
 	"github.com/joho/godotenv"
@@ -40,8 +41,9 @@ type Config struct {
 	Cors cors.Config
 	Auth auth.Config
 
-	Cache    cache.Config
-	Embedder hugr.EmbedderConfig
+	Cache     cache.Config
+	Embedder  hugr.EmbedderConfig
+	Heartbeat sources.HeartbeatConfig
 
 	TLSCertFile string
 	TLSKeyFile  string
@@ -66,6 +68,7 @@ func initEnvs() {
 	viper.SetDefault("SCHEMA_CACHE_MAX_ENTRIES", 0)
 	viper.SetDefault("SCHEMA_CACHE_TTL", "0s")
 	viper.SetDefault("MCP_ENABLED", false)
+	viper.SetDefault("DB_TIMEZONE", "")
 	viper.SetDefault("DB_PATH", "")
 	viper.SetDefault("DB_MAX_OPEN_CONNS", 0)
 	viper.SetDefault("DB_MAX_IDLE_CONNS", 0)
@@ -81,6 +84,9 @@ func initEnvs() {
 	viper.SetDefault("OIDC_REDIRECT_URL", "")
 	viper.SetDefault("MCP_OAUTH_CLIENT_ID", "")
 	viper.SetDefault("MCP_OAUTH_CLIENT_SECRET", "")
+	viper.SetDefault("HUGR_APP_HEARTBEAT_INTERVAL", "30s")
+	viper.SetDefault("HUGR_APP_HEARTBEAT_TIMEOUT", "10s")
+	viper.SetDefault("HUGR_APP_HEARTBEAT_RETRIES", 3)
 	viper.SetDefault("TLS_CERT_FILE", "")
 	viper.SetDefault("TLS_KEY_FILE", "")
 	viper.AutomaticEnv()
@@ -115,6 +121,7 @@ func loadConfig() Config {
 			MaxOpenConns: viper.GetInt("DB_MAX_OPEN_CONNS"),
 			MaxIdleConns: viper.GetInt("DB_MAX_IDLE_CONNS"),
 			Settings: db.Settings{
+				Timezone:             viper.GetString("DB_TIMEZONE"),
 				HomeDirectory:        viper.GetString("DB_HOME_DIRECTORY"),
 				AllowedDirectories:   viper.GetStringSlice("DB_ALLOWED_DIRECTORIES"),
 				AllowedPaths:         viper.GetStringSlice("DB_ALLOWED_PATHS"),
@@ -167,6 +174,11 @@ func loadConfig() Config {
 		Embedder: hugr.EmbedderConfig{
 			URL:        viper.GetString("EMBEDDER_URL"),
 			VectorSize: viper.GetInt("EMBEDDER_VECTOR_SIZE"),
+		},
+		Heartbeat: sources.HeartbeatConfig{
+			Interval:   viper.GetDuration("HUGR_APP_HEARTBEAT_INTERVAL"),
+			Timeout:    viper.GetDuration("HUGR_APP_HEARTBEAT_TIMEOUT"),
+			MaxRetries: viper.GetInt("HUGR_APP_HEARTBEAT_RETRIES"),
 		},
 		TLSCertFile:          viper.GetString("TLS_CERT_FILE"),
 		TLSKeyFile:           viper.GetString("TLS_KEY_FILE"),

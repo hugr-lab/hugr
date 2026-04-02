@@ -9,6 +9,7 @@ The hugr is built on the top of [DuckDB](https://duckdb.org) and uses it as an c
 - PostgreSQL (incl. with extensions: PostGIS, TimescaleDB)
 - DuckDB files
 - HTTP REST API (support OpenAPI v3)
+- Hugr Apps — pluggable applications via DuckDB Airport (Arrow Flight gRPC)
 - All file formats and data sources that supported by DuckDB (CSV, Parquet, JSON, ESRI Shape, etc.)
 
 Files can be stored in the local file system or in the cloud storage (currently support only s3 cloud storage, in plan: Azure, GCS, AWS, R2).
@@ -224,6 +225,14 @@ The format of the config file is described in the [auth.md](auth.md) file. The c
 - OIDC_USERNAME_CLAIM - OIDC username claim, default: "name", example: "name"
 - OIDC_USERID_CLAIM - OIDC user ID claim, default: "sub", example: "sub"
 - OIDC_ROLE_CLAIM - OIDC role claim, default: "x-hugr-role", example: "x-hugr-role"
+
+### Hugr Apps (pluggable applications)
+
+- HUGR_APP_HEARTBEAT_INTERVAL - interval between health checks for connected apps, default: 30s
+- HUGR_APP_HEARTBEAT_TIMEOUT - timeout per health check, default: 10s
+- HUGR_APP_HEARTBEAT_RETRIES - number of failed checks before suspending an app, default: 3
+
+See [Hugr Apps documentation](https://hugr-lab.github.io/docs/hugr-apps) for building applications.
 
 ### Cache
 

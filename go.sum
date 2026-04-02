@@ -99,8 +99,8 @@ github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aN
 github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/hashicorp/golang-lru/v2 v2.0.7 h1:a+bsQ5rvGLjzHuww6tVxozPZFVghXaHOwFs4luLUK2k=
 github.com/hashicorp/golang-lru/v2 v2.0.7/go.mod h1:QeFd9opnmA6QUJc5vARoKUSoFhyfM2/ZepoAG6RGpeM=
-github.com/hugr-lab/query-engine v0.3.10 h1:rzIMTFwaOds09luBL1hRjEDbi3XXLZG6HwIH/wNvJhQ=
-github.com/hugr-lab/query-engine v0.3.10/go.mod h1:WQRwTPp2Vy1STbYKDUGvvbDKF1wp8Y/RdCSjBTl+sgs=
+github.com/hugr-lab/query-engine v0.3.11 h1:Lz2UHRN2OO0fihUNIRfmdOZX7CSZTt7SA6c4J+/N1hM=
+github.com/hugr-lab/query-engine v0.3.11/go.mod h1:KDCshoF6m53IgWOOQPwBXvr0HVct8oFTja1HElD95vI=
 github.com/hugr-lab/query-engine/client v0.3.10 h1:dOQ8jcEAJwXqIoq4S5nAywijfxrEL5BZGveswABRcA8=
 github.com/hugr-lab/query-engine/client v0.3.10/go.mod h1:zS8lR36rhS6eDNMSwheQ37VhkVgmXGHLc/5VeK2R00o=
 github.com/hugr-lab/query-engine/types v0.3.10 h1:Svc4ui7S9SndIs0NIbaNCoewyQ+tnA04KmKcJzLrf94=

@@ -96,6 +96,7 @@ func main() {
 		Cache:                 config.Cache,
 		Embedder:              config.Embedder,
 		Cluster:               config.Cluster,
+		Heartbeat:             config.Heartbeat,
 	}
 
 	if config.DB.Path != "" {
@@ -246,6 +247,7 @@ func installDuckDBExtension() error {
 	defer conn.Close()
 
 	_, err = conn.Exec(`
+		INSTALL icu; LOAD icu;
 		INSTALL postgres; LOAD postgres;
 		INSTALL spatial; LOAD spatial;
 		INSTALL sqlite; LOAD sqlite;
