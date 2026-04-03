@@ -136,6 +136,7 @@ func loadConfig() Config {
 		},
 		CoreDB: coredb.Config{
 			Path:       viper.GetString("CORE_DB_PATH"),
+			VectorSize: viper.GetInt("EMBEDDER_VECTOR_SIZE"),
 			ReadOnly:   viper.GetBool("CORE_DB_READONLY"),
 			S3Endpoint: viper.GetString("CORE_DB_S3_ENDPOINT"),
 			S3Region:   viper.GetString("CORE_DB_S3_REGION"),
@@ -161,9 +162,9 @@ func loadConfig() Config {
 				TLSInsecure:     viper.GetBool("OIDC_TLS_INSECURE"),
 				CookieName:      viper.GetString("OIDC_COOKIE_NAME"),
 				ClientSecret:    viper.GetString("OIDC_CLIENT_SECRET"),
-			Scopes:          viper.GetString("OIDC_SCOPES"),
-			RedirectURL:     viper.GetString("OIDC_REDIRECT_URL"),
-			ScopeRolePrefix: viper.GetString("OIDC_SCOPE_ROLE_PREFIX"),
+				Scopes:          viper.GetString("OIDC_SCOPES"),
+				RedirectURL:     viper.GetString("OIDC_REDIRECT_URL"),
+				ScopeRolePrefix: viper.GetString("OIDC_SCOPE_ROLE_PREFIX"),
 				Claims: auth.OIDCClaims{
 					UserName: viper.GetString("OIDC_USERNAME_CLAIM"),
 					UserId:   viper.GetString("OIDC_USERID_CLAIM"),
