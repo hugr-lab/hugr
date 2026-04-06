@@ -4,17 +4,21 @@
 
 The DataMesh service that provides access to various data sources through common GraphQL API.
 
-The hugr is built on the top of [DuckDB](https://duckdb.org) and uses it as an calculation engine. The hugr can work with following data sources:
+The hugr is built on the top of [DuckDB](https://duckdb.org) and uses it as a calculation engine. The hugr can work with following data sources:
 
 - PostgreSQL (incl. with extensions: PostGIS, TimescaleDB)
+- MySQL
+- Microsoft SQL Server (MSSQL)
 - DuckDB files
+- Apache Iceberg tables
+- DuckLake catalogs
 - HTTP REST API (support OpenAPI v3)
+- Redis
 - Hugr Apps — pluggable applications via DuckDB Airport (Arrow Flight gRPC)
-- All file formats and data sources that supported by DuckDB (CSV, Parquet, JSON, ESRI Shape, etc.)
+- LLM providers (OpenAI, Anthropic, Gemini) — as function data sources
+- All file formats supported by DuckDB (CSV, Parquet, JSON, ESRI Shape, etc.)
 
-Files can be stored in the local file system or in the cloud storage (currently support only s3 cloud storage, in plan: Azure, GCS, AWS, R2).
-
-MySQL, SQLLite, Clickhouse will be supported in the future.
+Files can be stored in the local file system or in cloud storage (S3, Azure, GCS, R2).
 
 ## Executable
 
