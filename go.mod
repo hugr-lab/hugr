@@ -20,7 +20,7 @@ require (
 	github.com/duckdb/duckdb-go-bindings/lib/linux-amd64 v0.10501.0 // indirect
 	github.com/duckdb/duckdb-go-bindings/lib/linux-arm64 v0.10501.0 // indirect
 	github.com/duckdb/duckdb-go-bindings/lib/windows-amd64 v0.10501.0 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-openapi/swag/jsonname v0.25.5 // indirect
 	github.com/google/jsonschema-go v0.4.2 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
