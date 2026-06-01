@@ -10,3 +10,8 @@ specs/
 .specify/
 .claude/
 .vscode/
+
+# Local dev artifacts
+__debug_bin*
+*.duckdb
+*.duckdb.wal
