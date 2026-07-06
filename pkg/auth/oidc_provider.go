@@ -111,7 +111,11 @@ func (p *OIDCProvider) Authenticate(r *http.Request) (*auth.AuthInfo, error) {
 		return nil, auth.ErrTokenExpired
 	}
 	if err != nil {
-		return nil, auth.ErrForbidden
+		// The token could not be verified by this OIDC provider (wrong
+		// issuer/signature) — most likely issued for a different provider.
+		// Signal the middleware to try the next provider instead of failing
+		// outright; a token rejected by every provider still yields 401.
+		return nil, auth.ErrInvalidKeyType
 	}
 
 	claims := jwt.MapClaims{}
