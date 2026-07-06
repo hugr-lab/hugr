@@ -103,7 +103,10 @@ func (p *OIDCProvider) Authenticate(r *http.Request) (*auth.AuthInfo, error) {
 		return nil, err
 	}
 	if token == "" {
-		return nil, nil
+		// An empty credential is treated as "no token" so it does not block the
+		// chain; returning (nil, nil) here would bypass the middleware's
+		// rejected-token guard and could downgrade to anonymous access.
+		return nil, auth.ErrSkipAuth
 	}
 
 	idToken, err := p.verifier.Verify(r.Context(), token)
@@ -111,10 +114,14 @@ func (p *OIDCProvider) Authenticate(r *http.Request) (*auth.AuthInfo, error) {
 		return nil, auth.ErrTokenExpired
 	}
 	if err != nil {
-		// The token could not be verified by this OIDC provider (wrong
-		// issuer/signature) — most likely issued for a different provider.
-		// Signal the middleware to try the next provider instead of failing
-		// outright; a token rejected by every provider still yields 401.
+		// Verification failed. If the token was issued by this provider's issuer
+		// it is genuinely our token but invalid (bad signature/audience/nbf, or
+		// the IdP is unreachable) — a hard failure. Otherwise it was issued for a
+		// different provider, so let the middleware try the next one (a token no
+		// provider accepts still ends in 401, never anonymous).
+		if p.tokenIssuedHere(token) {
+			return nil, auth.ErrForbidden
+		}
 		return nil, auth.ErrInvalidKeyType
 	}
 
@@ -144,6 +151,21 @@ func (p *OIDCProvider) Authenticate(r *http.Request) (*auth.AuthInfo, error) {
 		AuthProvider: p.Name(),
 		Token:        token,
 	}, nil
+}
+
+// tokenIssuedHere reports whether the token's `iss` claim matches this
+// provider's configured issuer. It parses the JWT WITHOUT verifying the
+// signature — used only to classify a verification failure as a hard error
+// (our issuer's token, genuinely invalid) versus a fallthrough to the next
+// provider (a different issuer's token). A non-JWT or different/empty issuer is
+// treated as "not ours".
+func (p *OIDCProvider) tokenIssuedHere(token string) bool {
+	claims := jwt.MapClaims{}
+	if _, _, err := jwt.NewParser().ParseUnverified(token, claims); err != nil {
+		return false
+	}
+	iss, _ := claims["iss"].(string)
+	return iss == p.c.Issuer
 }
 
 // claimString extracts a string value from a claim, if prefix is provided, it return only unprefixed value with it.
