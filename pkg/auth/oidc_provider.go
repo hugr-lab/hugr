@@ -150,6 +150,7 @@ func (p *OIDCProvider) Authenticate(r *http.Request) (*auth.AuthInfo, error) {
 		AuthType:     p.Type(),
 		AuthProvider: p.Name(),
 		Token:        token,
+		Claims:       auth.ScalarClaims(claims),
 	}, nil
 }
 
