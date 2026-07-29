@@ -21,8 +21,14 @@
 -- search has a key to rank — and those rows occupy exactly the primary key a
 -- backfill targets. On any deployment that started the engine after 0.0.19,
 -- DO NOTHING would silently do nothing and the drop would take the only copy of
--- the text. The COALESCE(NULLIF(...)) guard keeps what DO NOTHING was there
--- for: an existing NON-EMPTY curation is never overwritten.
+-- the text.
+--
+-- "Never overwrite an existing curation" is therefore enforced in the SELECT,
+-- by the notCurated() guard below, and the SET takes EXCLUDED only. Doing it in
+-- the SET instead — COALESCE(annotations.description, EXCLUDED.description) —
+-- reads better and does not work: DuckDB has no CASE/COALESCE over FLOAT[N], so
+-- the vec column alone makes that form unportable ("Unimplemented type for case
+-- expression: FLOAT[768]").
 
 -- The module-root map: flattened root type name → dotted module. Materialized
 -- once because four statements need it.
@@ -72,10 +78,19 @@ FROM {{ if isAttachedDuckdb }}core.{{ end }}_schema_fields f
 JOIN _mig_module_roots r ON r.type_name = f.type_name
 WHERE f.hugr_type = 'function' AND r.kind IS NOT NULL
   AND f.is_summarized = true AND (f.description <> '' OR f.long_description <> '')
+  -- notCurated: never overwrite an existing NON-EMPTY curation. The
+  -- guard lives here rather than in the SET because the SET cannot
+  -- reference the target row portably (see the header).
+  AND NOT EXISTS (
+    SELECT 1 FROM {{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations a
+    WHERE a.entity_kind = r.kind
+      AND a.entity_key = CASE WHEN r.module = '' THEN f.name ELSE r.module || '.' || f.name END
+      AND COALESCE(a.description, '') <> ''
+  )
 ON CONFLICT (entity_kind, entity_key) DO UPDATE SET
-  description      = COALESCE(NULLIF({{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations.description, ''),      EXCLUDED.description),
-  long_description = COALESCE(NULLIF({{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations.long_description, ''), EXCLUDED.long_description),
-  vec              = COALESCE({{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations.vec, EXCLUDED.vec);
+  description      = EXCLUDED.description,
+  long_description = EXCLUDED.long_description,
+  vec              = EXCLUDED.vec;
 
 -- 2. Modules, from their ROOT TYPES. A module has several roots (query,
 --    mutation, function, …) and the summarizer described each from that root's
@@ -100,10 +115,19 @@ WHERE t.hugr_type = 'module' AND r.module <> ''
     ORDER BY r2.rank, t2.name
     LIMIT 1
   )
+  -- notCurated: never overwrite an existing NON-EMPTY curation. The
+  -- guard lives here rather than in the SET because the SET cannot
+  -- reference the target row portably (see the header).
+  AND NOT EXISTS (
+    SELECT 1 FROM {{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations a
+    WHERE a.entity_kind = 'module'
+      AND a.entity_key = r.module
+      AND COALESCE(a.description, '') <> ''
+  )
 ON CONFLICT (entity_kind, entity_key) DO UPDATE SET
-  description      = COALESCE(NULLIF({{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations.description, ''),      EXCLUDED.description),
-  long_description = COALESCE(NULLIF({{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations.long_description, ''), EXCLUDED.long_description),
-  vec              = COALESCE({{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations.vec, EXCLUDED.vec);
+  description      = EXCLUDED.description,
+  long_description = EXCLUDED.long_description,
+  vec              = EXCLUDED.vec;
 
 -- 3. Modules, from the nested-module GATEWAY fields (hugr_type = 'submodule').
 --    The gateway `cache` on _module_core_function describes module core.cache:
@@ -131,10 +155,19 @@ WHERE f.hugr_type = 'submodule'
     ORDER BY r2.rank, f2.type_name
     LIMIT 1
   )
+  -- notCurated: never overwrite an existing NON-EMPTY curation. The
+  -- guard lives here rather than in the SET because the SET cannot
+  -- reference the target row portably (see the header).
+  AND NOT EXISTS (
+    SELECT 1 FROM {{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations a
+    WHERE a.entity_kind = 'module'
+      AND a.entity_key = CASE WHEN r.module = '' THEN f.name ELSE r.module || '.' || f.name END
+      AND COALESCE(a.description, '') <> ''
+  )
 ON CONFLICT (entity_kind, entity_key) DO UPDATE SET
-  description      = COALESCE(NULLIF({{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations.description, ''),      EXCLUDED.description),
-  long_description = COALESCE(NULLIF({{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations.long_description, ''), EXCLUDED.long_description),
-  vec              = COALESCE({{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations.vec, EXCLUDED.vec);
+  description      = EXCLUDED.description,
+  long_description = EXCLUDED.long_description,
+  vec              = EXCLUDED.vec;
 
 -- 4. Generated TYPES (filters, mutation inputs, list filters, aggregations) →
 --    gql_type. They have no logical entity: they are shapes the storage derives
@@ -149,10 +182,19 @@ WHERE (t.hugr_type IN ('data_input', 'filter', 'filter_list')
        OR t.name LIKE '\_%\_aggregation%' ESCAPE '\')
   AND t.is_summarized = true AND (t.description <> '' OR t.long_description <> '')
   AND t.catalog <> '_system'
+  -- notCurated: never overwrite an existing NON-EMPTY curation. The
+  -- guard lives here rather than in the SET because the SET cannot
+  -- reference the target row portably (see the header).
+  AND NOT EXISTS (
+    SELECT 1 FROM {{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations a
+    WHERE a.entity_kind = 'gql_type'
+      AND a.entity_key = t.name
+      AND COALESCE(a.description, '') <> ''
+  )
 ON CONFLICT (entity_kind, entity_key) DO UPDATE SET
-  description      = COALESCE(NULLIF({{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations.description, ''),      EXCLUDED.description),
-  long_description = COALESCE(NULLIF({{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations.long_description, ''), EXCLUDED.long_description),
-  vec              = COALESCE({{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations.vec, EXCLUDED.vec);
+  description      = EXCLUDED.description,
+  long_description = EXCLUDED.long_description,
+  vec              = EXCLUDED.vec;
 
 -- 5. Root query/mutation FIELDS on module roots → gql_field. These are the
 --    per-query summaries ("Retrieves a list of movement routes. Supports
@@ -168,10 +210,19 @@ FROM {{ if isAttachedDuckdb }}core.{{ end }}_schema_fields f
 WHERE f.hugr_type IN ('select', 'select_one', 'aggregate', 'bucket_agg',
                       'mutation_insert', 'mutation_update', 'mutation_delete')
   AND f.is_summarized = true AND (f.description <> '' OR f.long_description <> '')
+  -- notCurated: never overwrite an existing NON-EMPTY curation. The
+  -- guard lives here rather than in the SET because the SET cannot
+  -- reference the target row portably (see the header).
+  AND NOT EXISTS (
+    SELECT 1 FROM {{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations a
+    WHERE a.entity_kind = 'gql_field'
+      AND a.entity_key = f.type_name || '.' || f.name
+      AND COALESCE(a.description, '') <> ''
+  )
 ON CONFLICT (entity_kind, entity_key) DO UPDATE SET
-  description      = COALESCE(NULLIF({{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations.description, ''),      EXCLUDED.description),
-  long_description = COALESCE(NULLIF({{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations.long_description, ''), EXCLUDED.long_description),
-  vec              = COALESCE({{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations.vec, EXCLUDED.vec);
+  description      = EXCLUDED.description,
+  long_description = EXCLUDED.long_description,
+  vec              = EXCLUDED.vec;
 
 -- 6. FIELDS of generated types → gql_field, but ONLY where the text says
 --    something the logical layer would not already say. A derived type INHERITS
@@ -195,10 +246,19 @@ WHERE (t.hugr_type IN ('data_input', 'filter', 'filter_list')
   AND t.catalog <> '_system'
   AND f.is_summarized = true AND (f.description <> '' OR f.long_description <> '')
   AND (b.description IS NULL OR b.description = '' OR b.description <> f.description)
+  -- notCurated: never overwrite an existing NON-EMPTY curation. The
+  -- guard lives here rather than in the SET because the SET cannot
+  -- reference the target row portably (see the header).
+  AND NOT EXISTS (
+    SELECT 1 FROM {{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations a
+    WHERE a.entity_kind = 'gql_field'
+      AND a.entity_key = f.type_name || '.' || f.name
+      AND COALESCE(a.description, '') <> ''
+  )
 ON CONFLICT (entity_kind, entity_key) DO UPDATE SET
-  description      = COALESCE(NULLIF({{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations.description, ''),      EXCLUDED.description),
-  long_description = COALESCE(NULLIF({{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations.long_description, ''), EXCLUDED.long_description),
-  vec              = COALESCE({{ if isAttachedDuckdb }}core.{{ end }}catalog.annotations.vec, EXCLUDED.vec);
+  description      = EXCLUDED.description,
+  long_description = EXCLUDED.long_description,
+  vec              = EXCLUDED.vec;
 
 -- 7. Remove what 0.0.19 misfiled: logical-kind rows whose key names a GENERATED
 --    artifact. They are unreachable — nothing resolves them — and not inert:
