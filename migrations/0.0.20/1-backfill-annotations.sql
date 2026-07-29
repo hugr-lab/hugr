@@ -14,7 +14,10 @@
 --
 -- This file writes every row under the key its content belongs to, using the
 -- legacy hugr_type discriminators; the last two statements remove what 0.0.19
--- misfiled. Safe to run whether or not 0.0.19's backfill ever executed.
+-- misfiled. It is correct whether or not 0.0.19's backfill ever executed — but
+-- it MUST run before 2-drop-legacy-schema.sql and cannot be replayed after it,
+-- since it reads the tables that file removes. The migrator applies a version
+-- once and in filename order, so neither is a live hazard.
 --
 -- ON CONFLICT ... DO UPDATE, never DO NOTHING. The storage SEEDS annotation
 -- rows when it writes a source — empty description plus a vector, so semantic
