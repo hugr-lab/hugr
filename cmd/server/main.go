@@ -297,5 +297,5 @@ func installDuckDBExtension() error {
 		log.Printf("Extension: %s, %s, installed: %t, path: %s\n", name, desc, installed, path)
 	}
 
-	return nil
+	return rows.Err()
 }

@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/coreos/go-oidc/v3 v3.18.0
-	github.com/duckdb/duckdb-go/v2 v2.10504.0
+	github.com/duckdb/duckdb-go/v2 v2.10505.0
 	github.com/hugr-lab/query-engine v0.3.41
 	github.com/joho/godotenv v1.5.1
 	github.com/prometheus/client_golang v1.23.2
@@ -16,11 +16,11 @@ require (
 require (
 	github.com/apache/arrow-go/v18 v18.5.2 // indirect
 	github.com/coder/websocket v1.8.14 // indirect
-	github.com/duckdb/duckdb-go-bindings/lib/darwin-amd64 v0.10504.0 // indirect
-	github.com/duckdb/duckdb-go-bindings/lib/darwin-arm64 v0.10504.0 // indirect
-	github.com/duckdb/duckdb-go-bindings/lib/linux-amd64 v0.10504.0 // indirect
-	github.com/duckdb/duckdb-go-bindings/lib/linux-arm64 v0.10504.0 // indirect
-	github.com/duckdb/duckdb-go-bindings/lib/windows-amd64 v0.10504.0 // indirect
+	github.com/duckdb/duckdb-go-bindings/lib/darwin-amd64 v0.10505.0 // indirect
+	github.com/duckdb/duckdb-go-bindings/lib/darwin-arm64 v0.10505.0 // indirect
+	github.com/duckdb/duckdb-go-bindings/lib/linux-amd64 v0.10505.0 // indirect
+	github.com/duckdb/duckdb-go-bindings/lib/linux-arm64 v0.10505.0 // indirect
+	github.com/duckdb/duckdb-go-bindings/lib/windows-amd64 v0.10505.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-openapi/swag/jsonname v0.26.0 // indirect
 	github.com/google/jsonschema-go v0.4.2 // indirect
@@ -53,7 +53,7 @@ require (
 	github.com/bradfitz/gomemcache v0.0.0-20260422231931-4d751bb6e37c // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
-	github.com/duckdb/duckdb-go-bindings v0.10504.0 // indirect
+	github.com/duckdb/duckdb-go-bindings v0.10505.0 // indirect
 	github.com/eko/gocache/lib/v4 v4.2.3 // indirect
 	github.com/eko/gocache/store/bigcache/v4 v4.2.4 // indirect
 	github.com/eko/gocache/store/memcache/v4 v4.2.4 // indirect
