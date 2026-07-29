@@ -6,7 +6,7 @@ import (
 
 	"github.com/duckdb/duckdb-go/v2"
 	hugr "github.com/hugr-lab/query-engine"
-	"github.com/hugr-lab/query-engine/pkg/catalog/compiler"
+	"github.com/hugr-lab/query-engine/pkg/catalog/base"
 	"github.com/hugr-lab/query-engine/pkg/catalog/sources"
 	rtsources "github.com/hugr-lab/query-engine/pkg/data-sources/sources"
 	"github.com/hugr-lab/query-engine/pkg/data-sources/sources/runtime"
@@ -116,7 +116,7 @@ func (s *Source) Attach(ctx context.Context, pool *db.Pool) error {
 
 func (s *Source) Catalog(ctx context.Context) (sources.Catalog, error) {
 	e := engines.NewDuckDB()
-	opts := compiler.Options{
+	opts := base.Options{
 		Name:         s.Name(),
 		Prefix:       "core_version",
 		ReadOnly:     s.IsReadonly(),
